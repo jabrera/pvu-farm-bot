@@ -1072,6 +1072,25 @@ var App = {
         waterPlants: function() {
             return new Promise(async resolve => {
                 await App.Farm.isLoaded();
+                var plantsToScarecrow = App.Farm.getPlantsToScarecrow();
+                if(plantsToScarecrow.length != 0) {
+                    App.Utility.log("Start scaring crows.");
+                    for(var i of plantsToScarecrow) {
+                        await App.Farm.Plant.select(i);
+                        await App.Utility.timeout(100);
+                        if(App.Farm.Plant.canHarvest()) {
+                            App.Utility.log("Plant can be harvested. Skipping plant...");
+                            return;
+                        }
+                        if(App.Farm.Plant.hasCrow()) {
+                            App.Utility.log("Plant has crow. Removing...");
+                            App.Tools.use(App.Constant.SCARECROW);
+                        }
+                        await App.Utility.timeout(100);
+                        await App.Farm.Plant.unselect(i);
+                    };
+                    App.Utility.log("Finished scaring crows.");
+                }
                 var plantsToWater = App.Farm.getPlantsToWater();
                 if(plantsToWater.length != 0) {
                     App.Utility.log("Start watering plants.");
@@ -1098,25 +1117,6 @@ var App = {
                         await App.Farm.Plant.unselect(i);
                     }
                     App.Utility.log("Finished watering plants.");
-                }
-                var plantsToScarecrow = App.Farm.getPlantsToScarecrow();
-                if(plantsToScarecrow.length != 0) {
-                    App.Utility.log("Start scaring crows.");
-                    for(var i of plantsToScarecrow) {
-                        await App.Farm.Plant.select(i);
-                        await App.Utility.timeout(100);
-                        if(App.Farm.Plant.canHarvest()) {
-                            App.Utility.log("Plant can be harvested. Skipping plant...");
-                            return;
-                        }
-                        if(App.Farm.Plant.hasCrow()) {
-                            App.Utility.log("Plant has crow. Removing...");
-                            App.Tools.use(App.Constant.SCARECROW);
-                        }
-                        await App.Utility.timeout(100);
-                        await App.Farm.Plant.unselect(i);
-                    };
-                    App.Utility.log("Finished scaring crows.");
                 }
                 var plantsToDropSeed = App.Farm.getPlantsToDropSeed();
                 if(plantsToDropSeed.length != 0) {
