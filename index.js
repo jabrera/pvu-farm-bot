@@ -1179,7 +1179,7 @@ var App = {
     init: async function() {
         var startDate = new Date();
         App.Utility.log("Initializing bot...");
-        await App.WorldTree.init();
+        // await App.WorldTree.init();
         await App.Farm.init();
         await App.Inventory.init();
         await App.Shop.init();
