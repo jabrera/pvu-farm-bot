@@ -9,7 +9,6 @@ var App = {
             AUTUMN: "autumn",
             WINTER: "winter",
         },
-
         ROOT_URL: "https://backend-farm.plantvsundead.com",
         API: {
             WEATHER_TODAY: "/weather-today",
@@ -22,6 +21,9 @@ var App = {
             SUNFLOWERS: "/sunflowers",
             BUY_TOOLS: "/buy-tools",
             FARMING_STATS: "/farming-stats",
+            FREE_SLOTS: "/farms/free-slots",
+            MY_LANDS: "/my-lands?offset=0&limit=20",
+            MY_PLANTS: "/my-plants?offset=0&limit=10&type=1&status=0",
         },
         
         FARMING_STAGE: {
@@ -172,6 +174,43 @@ var App = {
     },
     Farm: {
         init: async function() {
+            var plant_available = 0;
+            var motherTree_available = 0;
+            while(plant_available != 0 && motherTree_available != 0) {
+                var free_slots = await App.Farm.Land.getFreeSlots();
+                for(var land in free_slots.data.availableSlots) {
+                    land = free_slots.data.availableSlots[land];
+                    plant_available += land.availablePlantCapacity;
+                    motherTree_available += land.availableMotherTreeCapacity;
+                }
+                if(free_slots.data.farm.length != 0) {
+                    var selectedFarm = free_slots.data.farm[0];
+                    if(plant_available > 0) {
+                        var plants = await App.Farm.Plant.getMyPlants();
+                        var selectedPlant = null;
+                        for(var plant in plants.data) {
+                            plant = plants.data[plant];
+                            if(App.Weather.data.allowedPlants.includes(plant.plant.stats.type)) {
+                                if(selectedPlant == null) {
+                                    selectedPlant = plant;
+                                } else if(selectedPlant.plant.farmConfig.le / selectedPlant.plant.farmConfig.hours < plant.plant.farmConfig.le / plant.plant.farmConfig.le) {
+                                    selectedPlant = plant;
+                                }
+                            }
+                        }
+                        if(selectedPlant == null) {
+                            // plant sunflower sapling
+                            // if no sunflower sapling
+                            // buy sapling then plant
+                        } else {
+
+                        }
+                    }
+                    if(motherTree_available > 0) {
+
+                    }
+                }
+            }
             var plants = await App.Farm.Plant.getFarming();
             for (var plant in plants.data) {
                 plant = plants.data[plant];
@@ -231,8 +270,23 @@ var App = {
             });
         },
         Land: {
+            getFreeSlots: function() {
+                return new Promise(async function(resolve) {
+                    resolve(await App.Request.get(App.Constant.API.FREE_SLOTS));
+                });
+            },
+            getLands: function() {
+                return new Promise(async function(resolve) {
+                    resolve(await App.Request.get(App.Constant.API.MY_LANDS));
+                });
+            },
         },
         Plant: {
+            getMyPlants: function() {
+                return new Promise(async function(resolve) {
+                    resolve(await App.Request.get(App.Constant.API.MY_PLANTS));
+                });
+            },
             getFarming: function() {
                 return new Promise(async function(resolve) {
                     resolve(await App.Request.get(App.Constant.API.FARMING_PLANTS));
@@ -249,6 +303,7 @@ var App = {
         var startDate = new Date();
         App.Utility.log("Initializing bot...");
         await App.Tools.init();
+        await App.Weather.get();
         await App.Farm.init();
         var duration = (new Date() - startDate) / 1000;
         App.Utility.log("Bot finished in " + duration + " seconds.");
