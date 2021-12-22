@@ -24,6 +24,7 @@ var App = {
             FREE_SLOTS: "/farms/free-slots",
             MY_LANDS: "/my-lands?offset=0&limit=20",
             MY_PLANTS: "/my-plants?offset=0&limit=10&type=1&status=0",
+            ADD_PLANT: "/farm/add-plant",
         },
         
         FARMING_STAGE: {
@@ -75,7 +76,7 @@ var App = {
                 }
                 const request = await fetch(App.Constant.ROOT_URL + url, App.Request.getHeaderOptions(method, data));
                 const response = await request.json();
-                App.Utility.log(JSON.stringify(response));
+//                 App.Utility.log(JSON.stringify(response));
                 resolve(response);
             });
         },
@@ -174,15 +175,19 @@ var App = {
     },
     Farm: {
         init: async function() {
-            var plant_available = 0;
-            var motherTree_available = 0;
+            var plant_available = null;
+            var motherTree_available = null;
             while(plant_available != 0 && motherTree_available != 0) {
+                App.Utility.log("plants available: " + plant_available + " " + motherTree_available);
                 var free_slots = await App.Farm.Land.getFreeSlots();
+                plant_available = 0;
+                motherTree_available = 0;
                 for(var land in free_slots.data.availableSlots) {
                     land = free_slots.data.availableSlots[land];
                     plant_available += land.availablePlantCapacity;
                     motherTree_available += land.availableMotherTreeCapacity;
                 }
+                App.Utility.log("plants available: " + plant_available + " " + motherTree_available);
                 if(free_slots.data.farm.length != 0) {
                     var selectedFarm = free_slots.data.farm[0];
                     if(plant_available > 0) {
@@ -203,7 +208,10 @@ var App = {
                             // if no sunflower sapling
                             // buy sapling then plant
                         } else {
-
+                            App.Utility.log("Plant plant");
+                            App.Utility.log(selectedFarm);
+                            App.Utility.log(selectedPlant);
+                            await App.Farm.Plant.add(selectedFarm, "0", selectedPlant);
                         }
                     }
                     if(motherTree_available > 0) {
@@ -214,6 +222,7 @@ var App = {
             var plants = await App.Farm.Plant.getFarming();
             for (var plant in plants.data) {
                 plant = plants.data[plant];
+                console.log(plant);
                 if(plant.stage == App.Constant.FARMING_STAGE.CANCELLED && plant.totalHarvest > 0) {
                     var r = App.Farm.Plant.harvest(plant);
                     App.Balance.le += r.data.amount;
@@ -240,7 +249,7 @@ var App = {
                 }
                 for(var tool in plant.activeTools) {
                     tool = plant.activeTools[tool];
-                    if(tool.id == App.Constant.TOOL.POT) {
+                    if(tool.id == parseInt(App.Constant.TOOL.POT)) {
                         if(tool.count < 2) {
                             if(App.Tools[tool.type] == 0) {
                                 await App.Shop.buy(App.Constant.TOOL.POT,1);
@@ -295,6 +304,16 @@ var App = {
             harvest: function(plant) {
                 return new Promise(async function(resolve) {
                     resolve(await App.Request.post(App.Constant.API.HARVEST_PLANT.replace("{{id}}", plant._id)));
+                });
+            },
+            add: function(farm, land, plant) {
+                console.log(plant);
+                return new Promise(async function(resolve) {
+                    resolve(await App.Request.post(App.Constant.API.ADD_PLANT, {
+                        farmId: farm._id,
+                        landId: land,
+                        plantId: plant.plantId
+                    }));
                 });
             }
         },
