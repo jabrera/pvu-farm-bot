@@ -25,6 +25,7 @@ var App = {
             MY_LANDS: "/my-lands?offset=0&limit=20",
             MY_PLANTS: "/my-plants?offset=0&limit=10&type=1&status=0",
             ADD_PLANT: "/farm/add-plant",
+            REMOVE_PLANT: "/farm/remove-plant",
         },
         
         FARMING_STAGE: {
@@ -223,10 +224,15 @@ var App = {
             for (var plant in plants.data) {
                 plant = plants.data[plant];
                 console.log(plant);
-                if(plant.stage == App.Constant.FARMING_STAGE.CANCELLED && plant.totalHarvest > 0) {
-                    var r = App.Farm.Plant.harvest(plant);
-                    App.Balance.le += r.data.amount;
-                }
+                if(plant.stage == App.Constant.FARMING_STAGE.CANCELLED) {
+                    if(plant.totalHarvest > 0) {
+                        var r = await App.Farm.Plant.harvest(plant);
+                        App.Balance.le += r.data.amount;
+                    } else {
+                        await App.Farm.Plant.harvest(plant);
+                    }
+                    continue;
+                } 
                 if(plant.hasCrow) {
                     if(App.Tools.SCARECROW == 0) {
                         await App.Shop.buy(App.Constant.TOOL.SCARECROW,1);
@@ -306,6 +312,13 @@ var App = {
             harvest: function(plant) {
                 return new Promise(async function(resolve) {
                     resolve(await App.Request.post(App.Constant.API.HARVEST_PLANT.replace("{{id}}", plant._id)));
+                });
+            },
+            remove: function(plant) {
+                return new Promise(async function(resolve) {
+                    resolve(await App.Request.post(App.Constant.API.REMOVE_PLANT, {
+                        farmId: plant._id
+                    }));
                 });
             },
             add: function(farm, land, plant) {
