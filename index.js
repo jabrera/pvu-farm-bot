@@ -250,7 +250,8 @@ var App = {
                 for(var tool in plant.activeTools) {
                     tool = plant.activeTools[tool];
                     if(tool.id == parseInt(App.Constant.TOOL.POT)) {
-                        if(tool.count < 2) {
+                        var currentPot = tool.count;
+                        while(currentPot < 2) {
                             if(App.Tools[tool.type] == 0) {
                                 await App.Shop.buy(App.Constant.TOOL.POT,1);
                             }
@@ -258,6 +259,7 @@ var App = {
                                 farmId: plant._id,
                                 toolId: App.Constant.TOOL.POT
                             });
+                            currentPot++;
                             await App.Utility.timeout();
                         }
                     }
