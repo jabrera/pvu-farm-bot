@@ -89,7 +89,7 @@ var App = {
         },
         send: async function(url, method, data = null) {
             return new Promise(async function(resolve) {
-                App.Utility.log(`${method} ${url}`);
+                // App.Utility.log(`${method} ${url}`);
                 // if(data != null) {
                 //     App.Utility.log(`with data ${JSON.stringify(data)}`);
                 // }
@@ -105,7 +105,7 @@ var App = {
             return Math.random() * (max - min) + min;
         },
         timeout: function(ms = App.Constant.TIMEOUT) {
-            console.log("timeout for " + ms);
+            // App.Utility.log(`Pause for ${ms} ms`);
             return new Promise(resolve => setTimeout(resolve, ms));
         },
         log: function(msg) {
@@ -143,6 +143,7 @@ var App = {
             return new Promise(async function(resolve) {
                 const farming_stats = await App.Request.get(App.Constant.API.FARMING_STATS);
                 App.Balance.le = farming_stats.data.leWallet;
+                App.Utility.log(`LE Balance: ${App.Balance.le} LE`);
                 resolve();
             });
         }
@@ -154,10 +155,12 @@ var App = {
         init: function() {
             return new Promise(async function(resolve) {
                 const my_tools = await App.Request.get(App.Constant.API.MY_TOOLS);
+                App.Utility.log(`Your Tools:`);
                 for(var tool in my_tools.data) {
                     tool = my_tools.data[tool];
                     if(App.Tools.hasOwnProperty(tool.type)) {
                         App.Tools[tool.type] = tool.usages;
+                        App.Utility.log(`${tool.type}: ${tool.usages}`);
                     }
                 }
                 resolve();
@@ -177,6 +180,7 @@ var App = {
         buy_tools: function(toolId, amount) {
             return new Promise(async function(resolve) {
                 var leNeeded = App.Constant.SHOP.TOOL[toolId] * amount;
+                App.Utility.log(`Buying ${amount} pcs. for tool ${toolId} = ${leNeeded} LE`);
                 if(App.Balance.le >= leNeeded) {
                     await App.Shop.go();
                     await App.Request.post(App.Constant.API.BUY_TOOLS, {
@@ -184,6 +188,8 @@ var App = {
                         toolId: toolId
                     });
                     App.Balance.le -= leNeeded;
+                    App.Utility.log(`Bought ${amount} pcs. for tool ${toolId}`);
+                    App.Utility.log(`New LE Balance: ${App.Balance.le}`);
                     await App.Farm.getStats();
                     await App.Utility.timeout();
                     await App.Farm.go();
@@ -197,13 +203,16 @@ var App = {
         buy_sunflowers: function(sunflowerId, amount) {
             return new Promise(async function(resolve) {
                 var leNeeded = App.Constant.SHOP.SUNFLOWER[sunflowerId] * amount;
+                App.Utility.log(`Buying ${amount} pcs. for sunflower ${sunflowerId} = ${leNeeded} LE`);
                 if(App.Balance.le >= leNeeded) {
-                    await App.Shop.go();
+                    await App.Shotp.go();
                     await App.Request.post(App.Constant.API.BUY_SUNFLOWERS, {
                         amount: amount,
                         sunflowerId: sunflowerId
                     });
-                    App.Balance.le -= App.Constant.SHOP.SUNFLOWER[sunflowerId] * amount;
+                    App.Balance.le -= leNeeded;
+                    App.Utility.log(`Bought ${amount} pcs. for tool ${sunflowerId}`);
+                    App.Utility.log(`New LE Balance: ${App.Balance.le}`);
                     await App.Farm.getStats();
                     await App.Utility.timeout();
                     await App.Farm.go();
@@ -219,28 +228,37 @@ var App = {
         data: {},
         get: function() {
             return new Promise(async function(resolve) {
+                App.Utility.log(`Getting season data...`);
                 const weather = await App.Request.get(App.Constant.API.WEATHER_TODAY);
                 App.Weather.data = weather.data;
+                App.Utility.log(`Season: ${App.Weather.data.season}`);
                 resolve();
             });
         }
     },
     Farm: {
         init: async function() {
+            App.Utility.log(`Starting farm...`);
             var plants = await App.Farm.Plant.getFarming();
+            App.Utility.log(`Harvest plants - START`);
             for (var plant in plants.data) {
                 plant = plants.data[plant];
+                App.Utility.log(`\tFor Plant ${plant.plantId} ${(plant.hasOwnProperty("plantElement") ? '('+plant.plantElement+')' : '(sunflower)')}`);
                 if(plant.stage == App.Constant.FARMING_STAGE.CANCELLED) {
                     if(plant.totalHarvest > 0) {
+                        App.Utility.log(`\tHarvesting...`);
                         var r = await App.Farm.Plant.harvest(plant);
                         App.Balance.le += r.data.amount;
                     } else {
                         await App.Farm.Plant.remove(plant);
                     }
                     continue;
-                } 
+                } else {
+                    App.Utility.log(`\t\tNothing to harvest.`);
+                }
             }
-            
+            App.Utility.log(`Harvest plants - END`);
+            App.Utility.log(`Plant plants - START`);
             var plant_available = null;
             var motherTree_available = null;
             while(plant_available != 0 || motherTree_available != 0) {
@@ -253,6 +271,7 @@ var App = {
                     motherTree_available += land.availableMotherTreeCapacity;
                 }
                 if(free_slots.data.farm.length != 0) {
+                    App.Utility.log(`\tHas ${free_slots.data.farm.length} free slots!`);
                     var selectedFarm = free_slots.data.farm[0];
                     if(plant_available > 0) {
                         var plants = await App.Farm.Plant.getMyPlants();
@@ -268,20 +287,22 @@ var App = {
                             }
                         }
                         if(selectedPlant == null) {
+                            App.Utility.log(`\t\tNo extra plants. Planting sunflower saplings.`);
                             plants = await App.Farm.Plant.getMySunflowers();
                             for(var plant in plants.data) {
                                 plant = plants.data[plant];
                                 if(plant.sunflowerId == App.Constant.SUNFLOWER.SAPLING) {
                                     if(plant.usages == 0) {
+                                        App.Utility.log(`\t\tInsufficient sunflower salpings. Buying...`);
                                         if(await App.Shop.buy_sunflowers(App.Constant.SUNFLOWER.SAPLING,1) == false) continue;
                                     }
+                                    App.Utility.log(`\t\tPlanting sunflower sapling.`);
                                     await App.Farm.Plant.add(selectedFarm, "0", App.Constant.SUNFLOWER.SAPLING);
+                                    App.Utility.log(`\t\tSunflower sapling planted!`);
                                 }
                             }
                         } else {
-                            App.Utility.log("Plant plant");
-                            App.Utility.log(selectedFarm);
-                            App.Utility.log(selectedPlant);
+                            App.Utility.log(`\t\tPlanted ${selectedPlant.plantId} (${selectedPlant.plantElement})!`);
                             await App.Farm.Plant.add(selectedFarm, "0", selectedPlant);
                         }
                         plant_available--;
@@ -300,47 +321,59 @@ var App = {
                             }
                         }
                         if(selectedPlant == null) {
+                            App.Utility.log(`\t\tNo extra mother trees. Planting sunflower mama.`);
                             plants = await App.Farm.Plant.getMySunflowers();
                             for(var plant in plants.data) {
                                 plant = plants.data[plant];
                                 if(plant.sunflowerId == App.Constant.SUNFLOWER.MAMA) {
                                     if(plant.usages == 0) {
+                                        App.Utility.log(`\t\tInsufficient sunflower mama. Buying...`);
                                         if(await App.Shop.buy_sunflowers(App.Constant.SUNFLOWER.MAMA,1) == false) continue;
                                     }
+                                    App.Utility.log(`\t\tPlanting sunflower mama.`);
                                     await App.Farm.Plant.add(selectedFarm, "0", App.Constant.SUNFLOWER.MAMA);
+                                    App.Utility.log(`\t\tSunflower mama planted!`);
                                 }
                             }
                         } else {
-                            App.Utility.log("Plant plant");
-                            App.Utility.log(selectedFarm);
-                            App.Utility.log(selectedPlant);
+                            App.Utility.log(`\t\tPlanted ${selectedPlant.plantId} (${selectedPlant.plantElement})!`);
                             await App.Farm.Plant.add(selectedFarm, "0", selectedPlant);
                         }
                         motherTree_available--;
                     }
                 }
             }
+            App.Utility.log(`Maintening farm - START`);
             var plants = await App.Farm.Plant.getFarming();
             for (var plant in plants.data) {
                 plant = plants.data[plant];
+                App.Utility.log(`\tFor Plant ${plant.plantId} ${(plant.hasOwnProperty("plantElement") ? '('+plant.plantElement+')' : '(sunflower)')}`);
                 if(plant.hasCrow) {
+                    App.Utility.log(`\t\tHas crow...`);
                     if(App.Tools.SCARECROW == 0) {
+                        App.Utility.log(`\t\t\tNo scarecrow tool. Buying...`);
                         if(await App.Shop.buy_tools(App.Constant.TOOL.SCARECROW,1) == false) continue;
                     }
+                    App.Utility.log(`\t\t\tApplying scarecrow to plant...`);
                     await App.Request.post(App.Constant.API.APPLY_TOOL, {
                         farmId: plant._id,
                         toolId: App.Constant.TOOL.SCARECROW
                     });
+                    App.Utility.log(`\t\t\tCrow gone.`);
                     await App.Utility.timeout();
                 }
                 if(plant.needWater) {
+                    App.Utility.log(`\t\tNeeds water...`);
                     if(App.Tools.WATER < 2) {
+                        App.Utility.log(`\t\t\tNo water tool. Buying...`);
                         if(await App.Shop.buy_tools(App.Constant.TOOL.WATER,1) == false) continue;
                     }
+                    App.Utility.log(`\t\t\tWatering plant...`);
                     await App.Request.post(App.Constant.API.APPLY_TOOL, {
                         farmId: plant._id,
                         toolId: App.Constant.TOOL.WATER
                     });
+                    App.Utility.log(`\t\t\tPlant watered.`);
                     await App.Utility.timeout();
                 }
                 for(var tool in plant.activeTools) {
@@ -348,19 +381,24 @@ var App = {
                     if(tool.id == parseInt(App.Constant.TOOL.POT)) {
                         var currentPot = tool.count;
                         while(currentPot < 2) {
+                            App.Utility.log(`\t\tPot needed...`);
                             if(App.Tools[tool.type] == 0) {
+                                App.Utility.log(`\t\t\tNo pot tool. Buying...`);
                                 if(await App.Shop.buy_tools(App.Constant.TOOL.POT,1) == false) break;
                             }
+                            App.Utility.log(`\t\t\tAdding pot to plant...`);
                             await App.Request.post(App.Constant.API.APPLY_TOOL, {
                                 farmId: plant._id,
                                 toolId: App.Constant.TOOL.POT
                             });
+                            App.Utility.log(`\t\t\tPot added.`);
                             currentPot++;
                             await App.Utility.timeout();
                         }
                     }
                 }
             }
+            App.Utility.log(`Maintening farm - END`);
         },
         go: function() {
             return new Promise(async function(resolve) {
