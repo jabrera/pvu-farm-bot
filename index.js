@@ -90,9 +90,9 @@ var App = {
         send: async function(url, method, data = null) {
             return new Promise(async function(resolve) {
                 App.Utility.log(`${method} ${url}`);
-                if(data != null) {
-                    App.Utility.log(`with data ${JSON.stringify(data)}`);
-                }
+                // if(data != null) {
+                //     App.Utility.log(`with data ${JSON.stringify(data)}`);
+                // }
                 const request = await fetch(App.Constant.ROOT_URL + url, App.Request.getHeaderOptions(method, data));
                 const response = await request.json();
 //                 App.Utility.log(JSON.stringify(response));
