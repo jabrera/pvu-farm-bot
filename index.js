@@ -343,6 +343,7 @@ var App = {
                     }
                 }
             }
+            App.Utility.log(`Plant plants - END`);
             App.Utility.log(`Maintening farm - START`);
             var plants = await App.Farm.Plant.getFarming();
             for (var plant in plants.data) {
