@@ -205,7 +205,7 @@ var App = {
                 var leNeeded = App.Constant.SHOP.SUNFLOWER[sunflowerId] * amount;
                 App.Utility.log(`Buying ${amount} pcs. for sunflower ${sunflowerId} = ${leNeeded} LE`);
                 if(App.Balance.le >= leNeeded) {
-                    await App.Shotp.go();
+                    await App.Shop.go();
                     await App.Request.post(App.Constant.API.BUY_SUNFLOWERS, {
                         amount: amount,
                         sunflowerId: sunflowerId
