@@ -278,7 +278,10 @@ var App = {
                         var selectedPlant = null;
                         for(var plant in plants.data) {
                             plant = plants.data[plant];
-                            if(App.Weather.data.allowedPlants.includes(plant.plant.stats.type)) {
+                            var seasonEndDate = new Date(App.Weather.data.seasonEndTime);
+                            var today = new Date();
+                            var diffHours = Math.floor(Math.abs(today-seasonEndDate) / 1000 / 60 / 60);
+                            if(App.Weather.data.allowedPlants.includes(plant.plant.stats.type) && plant.plant.farmConfig.hours < diffHours) {
                                 if(selectedPlant == null) {
                                     selectedPlant = plant;
                                 } else if(selectedPlant.plant.farmConfig.le / selectedPlant.plant.farmConfig.hours < plant.plant.farmConfig.le / plant.plant.farmConfig.le) {
@@ -311,7 +314,10 @@ var App = {
                         var selectedPlant = null;
                         for(var plant in plants.data) {
                             plant = plants.data[plant];
-                            if(App.Weather.data.allowedPlants.includes(plant.plant.stats.type)) {
+                            var seasonEndDate = new Date(App.Weather.data.seasonEndTime);
+                            var today = new Date();
+                            var diffHours = Math.floor(Math.abs(today-seasonEndDate) / 1000 / 60 / 60);
+                            if(App.Weather.data.allowedPlants.includes(plant.plant.stats.type) && plant.plant.farmConfig.hours < diffHours) {
                                 if(selectedPlant == null) {
                                     selectedPlant = plant;
                                 } else if(selectedPlant.plant.farmConfig.le / selectedPlant.plant.farmConfig.hours < plant.plant.farmConfig.le / plant.plant.farmConfig.le) {
