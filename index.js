@@ -306,8 +306,7 @@ var App = {
                             await App.Farm.Plant.add(selectedFarm, "0", selectedPlant);
                         }
                         plant_available--;
-                    }
-                    if(motherTree_available > 0) {
+                    } else if(motherTree_available > 0) {
                         var plants = await App.Farm.Plant.getMyMotherTrees();
                         var selectedPlant = null;
                         for(var plant in plants.data) {
@@ -360,6 +359,7 @@ var App = {
                         farmId: plant._id,
                         toolId: App.Constant.TOOL.SCARECROW
                     });
+                    App.Tools.SCARECROW -= 1;
                     App.Utility.log(`\t\t\tCrow gone.`);
                     await App.Utility.timeout();
                 }
@@ -374,6 +374,7 @@ var App = {
                         farmId: plant._id,
                         toolId: App.Constant.TOOL.WATER
                     });
+                    App.Tools.WATER -= 2;
                     App.Utility.log(`\t\t\tPlant watered.`);
                     await App.Utility.timeout();
                 }
@@ -392,6 +393,7 @@ var App = {
                                 farmId: plant._id,
                                 toolId: App.Constant.TOOL.POT
                             });
+                            App.Tools[tool.type] -= 1;
                             App.Utility.log(`\t\t\tPot added.`);
                             currentPot++;
                             await App.Utility.timeout();
