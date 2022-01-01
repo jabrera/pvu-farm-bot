@@ -352,7 +352,6 @@ var App = {
                         motherTree_available--;
                     }
                 }
-                console.log(skipMotherTreeLots, skipPlantLots)
                 if(skipMotherTreeLots && skipPlantLots)
                     break;
             }
