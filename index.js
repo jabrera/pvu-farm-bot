@@ -202,25 +202,26 @@ var App = {
         },
         buy_sunflowers: function(sunflowerId, amount) {
             return new Promise(async function(resolve) {
-                var leNeeded = App.Constant.SHOP.SUNFLOWER[sunflowerId] * amount;
-                App.Utility.log(`Buying ${amount} pcs. for sunflower ${sunflowerId} = ${leNeeded} LE`);
-                if(App.Balance.le >= leNeeded) {
-                    await App.Shop.go();
-                    await App.Request.post(App.Constant.API.BUY_SUNFLOWERS, {
-                        amount: amount,
-                        sunflowerId: sunflowerId
-                    });
-                    App.Balance.le -= leNeeded;
-                    App.Utility.log(`Bought ${amount} pcs. for tool ${sunflowerId}`);
-                    App.Utility.log(`New LE Balance: ${App.Balance.le}`);
-                    await App.Farm.getStats();
-                    await App.Utility.timeout();
-                    await App.Farm.go();
-                    resolve(true);
-                } else {
-                    App.Utility.error("Cannot buy sunflower " + sunflowerId + ". LE Needed: " + leNeeded + ". You only have " + App.Balance.le + " LE");
-                    resolve(false);
-                }
+                resolve(true);
+//                 var leNeeded = App.Constant.SHOP.SUNFLOWER[sunflowerId] * amount;
+//                 App.Utility.log(`Buying ${amount} pcs. for sunflower ${sunflowerId} = ${leNeeded} LE`);
+//                 if(App.Balance.le >= leNeeded) {
+//                     await App.Shop.go();
+//                     await App.Request.post(App.Constant.API.BUY_SUNFLOWERS, {
+//                         amount: amount,
+//                         sunflowerId: sunflowerId
+//                     });
+//                     App.Balance.le -= leNeeded;
+//                     App.Utility.log(`Bought ${amount} pcs. for tool ${sunflowerId}`);
+//                     App.Utility.log(`New LE Balance: ${App.Balance.le}`);
+//                     await App.Farm.getStats();
+//                     await App.Utility.timeout();
+//                     await App.Farm.go();
+//                     resolve(true);
+//                 } else {
+//                     App.Utility.error("Cannot buy sunflower " + sunflowerId + ". LE Needed: " + leNeeded + ". You only have " + App.Balance.le + " LE");
+//                     resolve(false);
+//                 }
             });
         }
     },
