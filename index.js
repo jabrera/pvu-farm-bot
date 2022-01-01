@@ -291,20 +291,20 @@ var App = {
                             }
                         }
                         if(selectedPlant == null) {
-                            App.Utility.log(`\t\tNo extra plants. Planting sunflower saplings.`);
-                            plants = await App.Farm.Plant.getMySunflowers();
-                            for(var plant in plants.data) {
-                                plant = plants.data[plant];
-                                if(plant.sunflowerId == App.Constant.SUNFLOWER.SAPLING) {
-                                    if(plant.usages == 0) {
-                                        App.Utility.log(`\t\tInsufficient sunflower salpings. Buying...`);
-                                        if(await App.Shop.buy_sunflowers(App.Constant.SUNFLOWER.SAPLING,1) == false) continue;
-                                    }
-                                    App.Utility.log(`\t\tPlanting sunflower sapling.`);
-                                    await App.Farm.Plant.add(selectedFarm, "0", App.Constant.SUNFLOWER.SAPLING);
-                                    App.Utility.log(`\t\tSunflower sapling planted!`);
-                                }
-                            }
+                            App.Utility.log(`\t\tNo extra plants. Skipping...`);
+//                             plants = await App.Farm.Plant.getMySunflowers();
+//                             for(var plant in plants.data) {
+//                                 plant = plants.data[plant];
+//                                 if(plant.sunflowerId == App.Constant.SUNFLOWER.SAPLING) {
+//                                     if(plant.usages == 0) {
+//                                         App.Utility.log(`\t\tInsufficient sunflower salpings. Buying...`);
+//                                         if(await App.Shop.buy_sunflowers(App.Constant.SUNFLOWER.SAPLING,1) == false) continue;
+//                                     }
+//                                     App.Utility.log(`\t\tPlanting sunflower sapling.`);
+//                                     await App.Farm.Plant.add(selectedFarm, "0", App.Constant.SUNFLOWER.SAPLING);
+//                                     App.Utility.log(`\t\tSunflower sapling planted!`);
+//                                 }
+//                             }
                         } else {
                             App.Utility.log(`\t\tPlanted ${selectedPlant.plantId} (${selectedPlant.plantElement})!`);
                             await App.Farm.Plant.add(selectedFarm, "0", selectedPlant);
@@ -327,20 +327,20 @@ var App = {
                             }
                         }
                         if(selectedPlant == null) {
-                            App.Utility.log(`\t\tNo extra mother trees. Planting sunflower mama.`);
-                            plants = await App.Farm.Plant.getMySunflowers();
-                            for(var plant in plants.data) {
-                                plant = plants.data[plant];
-                                if(plant.sunflowerId == App.Constant.SUNFLOWER.MAMA) {
-                                    if(plant.usages == 0) {
-                                        App.Utility.log(`\t\tInsufficient sunflower mama. Buying...`);
-                                        if(await App.Shop.buy_sunflowers(App.Constant.SUNFLOWER.MAMA,1) == false) continue;
-                                    }
-                                    App.Utility.log(`\t\tPlanting sunflower mama.`);
-                                    await App.Farm.Plant.add(selectedFarm, "0", App.Constant.SUNFLOWER.MAMA);
-                                    App.Utility.log(`\t\tSunflower mama planted!`);
-                                }
-                            }
+                            App.Utility.log(`\t\tNo extra plants. Skipping...`);
+//                             plants = await App.Farm.Plant.getMySunflowers();
+//                             for(var plant in plants.data) {
+//                                 plant = plants.data[plant];
+//                                 if(plant.sunflowerId == App.Constant.SUNFLOWER.MAMA) {
+//                                     if(plant.usages == 0) {
+//                                         App.Utility.log(`\t\tInsufficient sunflower mama. Buying...`);
+//                                         if(await App.Shop.buy_sunflowers(App.Constant.SUNFLOWER.MAMA,1) == false) continue;
+//                                     }
+//                                     App.Utility.log(`\t\tPlanting sunflower mama.`);
+//                                     await App.Farm.Plant.add(selectedFarm, "0", App.Constant.SUNFLOWER.MAMA);
+//                                     App.Utility.log(`\t\tSunflower mama planted!`);
+//                                 }
+//                             }
                         } else {
                             App.Utility.log(`\t\tPlanted ${selectedPlant.plantId} (${selectedPlant.plantElement})!`);
                             await App.Farm.Plant.add(selectedFarm, "0", selectedPlant);
