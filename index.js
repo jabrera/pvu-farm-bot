@@ -172,7 +172,7 @@ var App = {
             return new Promise(async function(resolve) {
                 // does nothing but needs to request
                 await App.Request.get(App.Constant.API.AVAILABLE_TOOLS);
-                await App.Request.get(App.Constant.API.SUNFLOWERS);
+                // await App.Request.get(App.Constant.API.SUNFLOWERS);
                 await App.Utility.timeout();
                 resolve();
             });
