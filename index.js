@@ -262,6 +262,8 @@ var App = {
             App.Utility.log(`Plant plants - START`);
             var plant_available = null;
             var motherTree_available = null;
+            var skipPlantLots = false;
+            var skipMotherTreeLots = false;
             while(plant_available != 0 || motherTree_available != 0) {
                 var free_slots = await App.Farm.Land.getFreeSlots();
                 plant_available = 0;
@@ -274,7 +276,7 @@ var App = {
                 if(free_slots.data.farm.length != 0) {
                     App.Utility.log(`\tHas ${free_slots.data.farm.length} free slots!`);
                     var selectedFarm = free_slots.data.farm[0];
-                    if(plant_available > 0) {
+                    if(plant_available > 0 && !skipPlantLots) {
                         var plants = await App.Farm.Plant.getMyPlants();
                         var selectedPlant = null;
                         for(var plant in plants.data) {
@@ -292,6 +294,7 @@ var App = {
                         }
                         if(selectedPlant == null) {
                             App.Utility.log(`\t\tNo extra plants. Skipping...`);
+                            skipPlantLots = true;
 //                             plants = await App.Farm.Plant.getMySunflowers();
 //                             for(var plant in plants.data) {
 //                                 plant = plants.data[plant];
@@ -310,7 +313,7 @@ var App = {
                             await App.Farm.Plant.add(selectedFarm, "0", selectedPlant);
                         }
                         plant_available--;
-                    } else if(motherTree_available > 0) {
+                    } else if(motherTree_available > 0 && !skipMotherTreeLots) {
                         var plants = await App.Farm.Plant.getMyMotherTrees();
                         var selectedPlant = null;
                         for(var plant in plants.data) {
@@ -328,6 +331,7 @@ var App = {
                         }
                         if(selectedPlant == null) {
                             App.Utility.log(`\t\tNo extra plants. Skipping...`);
+                            skipMotherTreeLots = true;
 //                             plants = await App.Farm.Plant.getMySunflowers();
 //                             for(var plant in plants.data) {
 //                                 plant = plants.data[plant];
@@ -348,6 +352,9 @@ var App = {
                         motherTree_available--;
                     }
                 }
+                console.log(skipMotherTreeLots, skipPlantLots)
+                if(skipMotherTreeLots && skipPlantLots)
+                    break;
             }
             App.Utility.log(`Plant plants - END`);
             App.Utility.log(`Maintening farm - START`);
