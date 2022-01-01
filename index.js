@@ -58,6 +58,154 @@ var App = {
             SAPLING: 1,
         }
     },
+    Gathering: {
+        ROOT_URL: "https://gather.plantvsundead.com",
+        API: {
+            ENTER_GATHER: "/user/enter-gather",
+            ROUTE: "/map/route",
+            START_MINIGAME: "/map/start-minigame",
+
+            CHOPPING_TREE: "/chopping/chopping-tree",
+            CHOPPING_REWARD: "/chopping/collect-reward",
+            CHOPPING_FINISH: "/chopping/finish-map",
+            CHOPPING_MAP: "/chopping/get-map",
+        },
+        CHOPPING_INDEX: 0,
+        MINING_INDEX: 1,
+        FISHING_INDEX: 2,
+        getPrioritizedMiniGames: () => [App.Gathering.CHOPPING_INDEX, App.Gathering.MINING_INDEX, App.Gathering.FISHING_INDEX],
+        data: {},
+        init: function() {
+            return new Promise(async function(resolve) {
+                await App.Gathering.enter();
+                await App.Gathering.route();
+                if(App.Gathering.data.enter.currentStamina != 0) {
+                    var playingIndex = App.Gathering.data.route.playingRouteIndex;
+                    var map = App.Gathering.data.route.config;
+                    var currentStep = map[playingIndex];
+                    App.Utility.log("Current step: " + playingIndex);
+                    var selectedMiniGame = null;
+                    for(var x in App.Gathering.getPrioritizedMiniGames()) {
+                        var prioritizedMiniGame = App.Gathering.getPrioritizedMiniGames()[x];
+                        console.log(prioritizedMiniGame);
+                        for(var y in currentStep.miniGames) {
+                            var availableMiniGame = currentStep.miniGames[y];
+                            console.log(availableMiniGame);
+                            if(availableMiniGame.nodeType == prioritizedMiniGame) {
+                                console.log("selected");
+                                selectedMiniGame = prioritizedMiniGame;
+                                break;
+                            }
+                        }
+                        if(selectedMiniGame != null) break;
+                    }
+                    App.Utility.log("Selected mini game: " + selectedMiniGame);
+                    if(selectedMiniGame == App.Gathering.CHOPPING_INDEX) {
+                        await App.Gathering.MiniGame.Chopping.init();
+                    }
+                }
+                resolve();
+            });
+        },
+        enter: function() {
+            return new Promise(async function(resolve) {
+                const response = await App.Request.get(App.Gathering.ROOT_URL + App.Gathering.API.ENTER_GATHER);
+                App.Gathering.data["enter"] = response.data;
+                resolve();
+            });
+        },
+        route: function() {
+            return new Promise(async function(resolve) {
+                const response = await App.Request.get(App.Gathering.ROOT_URL + App.Gathering.API.ROUTE);
+                App.Gathering.data["route"] = response.data;
+                resolve();
+            });
+        },
+        start: function(miniGameIndex) {
+            return new Promise(async function(resolve) {
+                const response = await App.Request.post(App.Gathering.ROOT_URL + App.Gathering.API.START_MINIGAME, {
+                    "miniGameIndex": miniGameIndex
+                });
+                resolve(response.data);
+            });
+        },
+        MiniGame: {
+            Chopping: {
+                SMALL_TREE: "SMALL_TREE",
+                SMALL_STUMP: "SMALL_STUMP",
+                init: function() {
+                    return new Promise(async function(resolve) {
+                        var start = await App.Gathering.start(App.Gathering.CHOPPING_INDEX);
+                        var map = await App.Gathering.MiniGame.Chopping.getMap(start.playingMiniGameId);
+                        var trees = map.objects;
+                        for(var treeIndex in trees) {
+                            var tree = trees[treeIndex];
+                            while(App.Gathering.data.enter.currentStamina != 0) {
+                                App.Utility.log("Chopping tree #" + treeIndex + "...");
+                                var choppedTree = await App.Gathering.MiniGame.Chopping.chop(treeIndex);
+                                App.Gathering.data.enter.currentStamina--;
+                                if(choppedTree.hasOwnProperty("rewards")) {      
+                                    if(choppedTree.rewards.length != 0) {
+                                        for(var rewardIndex in choppedTree.rewards) {
+                                            await App.Utility.timeout(500);
+                                            var reward = choppedTree.rewards[rewardIndex];
+                                            App.Utility.log("Claiming reward " + reward.token);
+                                            await App.Gathering.MiniGame.Chopping.reward(reward.token);
+                                        }
+                                    }
+                                    await App.Utility.timeout(100);
+                                    if(choppedTree.tree.type == App.Gathering.MiniGame.SMALL_STUMP && choppedTree.tree.isExploited) {
+                                        App.Utility.log("Tree #" + treeIndex + " chopped.");
+                                        break;
+                                    }
+                                } else {
+                                    break;
+                                }
+                            }
+                        }
+                        if(App.Gathering.data.enter.currentStamina != 0) {
+                            await App.Gathering.MiniGame.Chopping.finish();
+                            resolve(true);
+                        } else {
+                            resolve(false);
+                        }
+                    });
+                },
+                getMap: function(miniGameId) {
+                    return new Promise(async function(resolve) {
+                        const response = await App.Request.get(App.Gathering.ROOT_URL + App.Gathering.API.CHOPPING_MAP + "?miniGameId=" + miniGameId);
+                        resolve(response.data);
+                    });
+                },
+                chop: function(treeIndex) {
+                    return new Promise(async function(resolve) {
+                        const response = await App.Request.post(App.Gathering.ROOT_URL + App.Gathering.API.CHOPPING_TREE, {
+                            "treeIndex": treeIndex
+                        });
+                        resolve(response.data);
+                    });
+                },
+                reward: function(rewardToken) {
+                    return new Promise(async function(resolve) {
+                        const response = await App.Request.post(App.Gathering.ROOT_URL + App.Gathering.API.CHOPPING_REWARD, {
+                            "rewardToken": rewardToken
+                        });
+                        resolve();
+                    });
+                },
+                finish: function() {
+                    return new Promise(async function(resolve) {
+                        const response = await App.Request.post(App.Gathering.ROOT_URL + App.Gathering.API.CHOPPING_FINISH);
+                        resolve();
+                    });
+                }
+            },
+            Mining: {
+            }, 
+            Fishing: {
+            }
+        }
+    },
     Request: {
         Method: {
             GET: "get",
@@ -93,7 +241,7 @@ var App = {
                 // if(data != null) {
                 //     App.Utility.log(`with data ${JSON.stringify(data)}`);
                 // }
-                const request = await fetch(App.Constant.ROOT_URL + url, App.Request.getHeaderOptions(method, data));
+                const request = await fetch(url, App.Request.getHeaderOptions(method, data));
                 const response = await request.json();
 //                 App.Utility.log(JSON.stringify(response));
                 resolve(response);
@@ -141,7 +289,7 @@ var App = {
         bnb: 0,
         get: function() {
             return new Promise(async function(resolve) {
-                const farming_stats = await App.Request.get(App.Constant.API.FARMING_STATS);
+                const farming_stats = await App.Request.get(App.Constant.ROOT_URL + App.Constant.API.FARMING_STATS);
                 App.Balance.le = farming_stats.data.leWallet;
                 App.Utility.log(`LE Balance: ${App.Balance.le} LE`);
                 resolve();
@@ -154,7 +302,7 @@ var App = {
         WATER: 0,
         init: function() {
             return new Promise(async function(resolve) {
-                const my_tools = await App.Request.get(App.Constant.API.MY_TOOLS);
+                const my_tools = await App.Request.get(App.Constant.ROOT_URL + App.Constant.API.MY_TOOLS);
                 App.Utility.log(`Your Tools:`);
                 for(var tool in my_tools.data) {
                     tool = my_tools.data[tool];
@@ -171,8 +319,8 @@ var App = {
         go: function() {
             return new Promise(async function(resolve) {
                 // does nothing but needs to request
-                await App.Request.get(App.Constant.API.AVAILABLE_TOOLS);
-                // await App.Request.get(App.Constant.API.SUNFLOWERS);
+                await App.Request.get(App.Constant.ROOT_URL + App.Constant.API.AVAILABLE_TOOLS);
+                // await App.Request.get(App.Constant.ROOT_URL + App.Constant.API.SUNFLOWERS);
                 await App.Utility.timeout();
                 resolve();
             });
@@ -183,7 +331,7 @@ var App = {
                 App.Utility.log(`Buying ${amount} pcs. for tool ${toolId} = ${leNeeded} LE`);
                 if(App.Balance.le >= leNeeded) {
                     await App.Shop.go();
-                    await App.Request.post(App.Constant.API.BUY_TOOLS, {
+                    await App.Request.post(App.Constant.ROOT_URL + App.Constant.API.BUY_TOOLS, {
                         amount: amount,
                         toolId: toolId
                     });
@@ -207,7 +355,7 @@ var App = {
 //                 App.Utility.log(`Buying ${amount} pcs. for sunflower ${sunflowerId} = ${leNeeded} LE`);
 //                 if(App.Balance.le >= leNeeded) {
 //                     await App.Shop.go();
-//                     await App.Request.post(App.Constant.API.BUY_SUNFLOWERS, {
+//                     await App.Request.post(App.Constant.ROOT_URL + App.Constant.API.BUY_SUNFLOWERS, {
 //                         amount: amount,
 //                         sunflowerId: sunflowerId
 //                     });
@@ -230,7 +378,7 @@ var App = {
         get: function() {
             return new Promise(async function(resolve) {
                 App.Utility.log(`Getting season data...`);
-                const weather = await App.Request.get(App.Constant.API.WEATHER_TODAY);
+                const weather = await App.Request.get(App.Constant.ROOT_URL + App.Constant.API.WEATHER_TODAY);
                 App.Weather.data = weather.data;
                 App.Utility.log(`Season: ${App.Weather.data.season}`);
                 resolve();
@@ -273,6 +421,8 @@ var App = {
                     plant_available += land.availablePlantCapacity;
                     motherTree_available += land.availableMotherTreeCapacity;
                 }
+                if(plant_available == 0) skipPlantLots = true;
+                if(motherTree_available == 0) skipMotherTreeLots = true;
                 if(free_slots.data.farm.length != 0) {
                     App.Utility.log(`\tHas ${free_slots.data.farm.length} free slots!`);
                     var selectedFarm = free_slots.data.farm[0];
@@ -352,6 +502,7 @@ var App = {
                         motherTree_available--;
                     }
                 }
+                console.log(skipMotherTreeLots, skipPlantLots)
                 if(skipMotherTreeLots && skipPlantLots)
                     break;
             }
@@ -368,7 +519,7 @@ var App = {
                         if(await App.Shop.buy_tools(App.Constant.TOOL.SCARECROW,1) == false) continue;
                     }
                     App.Utility.log(`\t\t\tApplying scarecrow to plant...`);
-                    await App.Request.post(App.Constant.API.APPLY_TOOL, {
+                    await App.Request.post(App.Constant.ROOT_URL + App.Constant.API.APPLY_TOOL, {
                         farmId: plant._id,
                         toolId: App.Constant.TOOL.SCARECROW
                     });
@@ -383,7 +534,7 @@ var App = {
                         if(await App.Shop.buy_tools(App.Constant.TOOL.WATER,1) == false) continue;
                     }
                     App.Utility.log(`\t\t\tWatering plant...`);
-                    await App.Request.post(App.Constant.API.APPLY_TOOL, {
+                    await App.Request.post(App.Constant.ROOT_URL + App.Constant.API.APPLY_TOOL, {
                         farmId: plant._id,
                         toolId: App.Constant.TOOL.WATER
                     });
@@ -402,7 +553,7 @@ var App = {
                                 if(await App.Shop.buy_tools(App.Constant.TOOL.POT,1) == false) break;
                             }
                             App.Utility.log(`\t\t\tAdding pot to plant...`);
-                            await App.Request.post(App.Constant.API.APPLY_TOOL, {
+                            await App.Request.post(App.Constant.ROOT_URL + App.Constant.API.APPLY_TOOL, {
                                 farmId: plant._id,
                                 toolId: App.Constant.TOOL.POT
                             });
@@ -427,20 +578,20 @@ var App = {
         },
         getStats: function() {
             return new Promise(async function(resolve) {
-                resolve(await App.Request.get(App.Constant.API.FARMING_STATS));
+                resolve(await App.Request.get(App.Constant.ROOT_URL + App.Constant.API.FARMING_STATS));
             });
         },
         Land: {
             getFreeSlots: function() {
                 return new Promise(async function(resolve) {
                     await App.Utility.timeout();
-                    resolve(await App.Request.get(App.Constant.API.FREE_SLOTS));
+                    resolve(await App.Request.get(App.Constant.ROOT_URL + App.Constant.API.FREE_SLOTS));
                 });
             },
             getLands: function() {
                 return new Promise(async function(resolve) {
                     await App.Utility.timeout();
-                    resolve(await App.Request.get(App.Constant.API.MY_LANDS));
+                    resolve(await App.Request.get(App.Constant.ROOT_URL + App.Constant.API.MY_LANDS));
                 });
             },
         },
@@ -448,37 +599,37 @@ var App = {
             getMyPlants: function() {
                 return new Promise(async function(resolve) {
                     await App.Utility.timeout();
-                    resolve(await App.Request.get(App.Constant.API.MY_PLANTS));
+                    resolve(await App.Request.get(App.Constant.ROOT_URL + App.Constant.API.MY_PLANTS));
                 });
             },
             getMyMotherTrees: function() {
                 return new Promise(async function(resolve) {
                     await App.Utility.timeout();
-                    resolve(await App.Request.get(App.Constant.API.MY_MOTHER_TREES));
+                    resolve(await App.Request.get(App.Constant.ROOT_URL + App.Constant.API.MY_MOTHER_TREES));
                 });
             },
             getMySunflowers: function() {
                 return new Promise(async function(resolve) {
                     await App.Utility.timeout();
-                    resolve(await App.Request.get(App.Constant.API.MY_SUNFLOWERS));
+                    resolve(await App.Request.get(App.Constant.ROOT_URL + App.Constant.API.MY_SUNFLOWERS));
                 });
             },
             getFarming: function() {
                 return new Promise(async function(resolve) {
                     await App.Utility.timeout();
-                    resolve(await App.Request.get(App.Constant.API.FARMING_PLANTS));
+                    resolve(await App.Request.get(App.Constant.ROOT_URL + App.Constant.API.FARMING_PLANTS));
                 });
             },
             harvest: function(plant) {
                 return new Promise(async function(resolve) {
                     await App.Utility.timeout();
-                    resolve(await App.Request.post(App.Constant.API.HARVEST_PLANT.replace("{{id}}", plant._id)));
+                    resolve(await App.Request.post(App.Constant.ROOT_URL + App.Constant.API.HARVEST_PLANT.replace("{{id}}", plant._id)));
                 });
             },
             remove: function(plant) {
                 return new Promise(async function(resolve) {
                     await App.Utility.timeout();
-                    resolve(await App.Request.post(App.Constant.API.REMOVE_PLANT, {
+                    resolve(await App.Request.post(App.Constant.ROOT_URL + App.Constant.API.REMOVE_PLANT, {
                         farmId: plant._id
                     }));
                 });
@@ -487,13 +638,13 @@ var App = {
                 return new Promise(async function(resolve) {
                     await App.Utility.timeout();
                     if(plant == App.Constant.SUNFLOWER.SAPLING || plant == App.Constant.SUNFLOWER.MAMA) {
-                        resolve(await App.Request.post(App.Constant.API.ADD_PLANT, {
+                        resolve(await App.Request.post(App.Constant.ROOT_URL + App.Constant.API.ADD_PLANT, {
                             farmId: farm._id,
                             landId: land,
                             sunflowerId: plant
                         }));
                     } else {
-                        resolve(await App.Request.post(App.Constant.API.ADD_PLANT, {
+                        resolve(await App.Request.post(App.Constant.ROOT_URL + App.Constant.API.ADD_PLANT, {
                             farmId: farm._id,
                             landId: land,
                             plantId: plant.plantId
