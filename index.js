@@ -91,7 +91,7 @@ var App = {
             return new Promise(async function(resolve) {
                 var nextAvailableGame = null;
                 App.Utility.log("Initializing Gathering Mode");
-                while(App.Gathering.data.enter.currentStamina != 0) {
+                while(true) {
                     await App.Gathering.enter();
                     await App.Gathering.route();
                     var playingIndex = App.Gathering.data.route.playingRouteIndex;
@@ -146,6 +146,9 @@ var App = {
                     } else if(selectedMiniGame == App.Gathering.MINING_INDEX) {
                         await App.Gathering.MiniGame.Mining.init();
                     } else {
+                        break;
+                    }
+                    if(App.Gathering.data.enter.currentStamina < 50) {
                         break;
                     }
                 }
