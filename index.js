@@ -824,7 +824,7 @@ var App = {
             add: function(farm, land, plant) {
                 return new Promise(async function(resolve) {
                     await App.Utility.timeout();
-                    if(plant == App.Constant.SUNFLOWER.SAPLING || plant == App.Constant.SUNFLOWER.MAMA) {
+                    if(!isNaN(plant)) {
                         resolve(await App.Request.post(App.Constant.ROOT_URL + App.Constant.API.ADD_PLANT, {
                             farmId: farm._id,
                             landId: land,
