@@ -108,42 +108,32 @@ var App = {
                     var selectedMiniGame = null;
                     for(var x in App.Gathering.getPrioritizedMiniGames()) {
                         var prioritizedMiniGame = App.Gathering.getPrioritizedMiniGames()[x];
-                        console.log("checking prioritized mini game", prioritizedMiniGame);
                         for(var y in currentStep.miniGames) {
                             if(nextAvailableGame != null) {
                                 console.log(nextAvailableGame);
                                 console.log(y);
                                 console.log(!nextAvailableGame.includes(parseInt(y)))
                                 if(!nextAvailableGame.includes(parseInt(y))) {
-                                    console.log(y, "can't play");
                                     continue;
                                 }
-                                console.log(y, "can play")
                             }
                             var availableMiniGame = currentStep.miniGames[y];
                             if(availableMiniGame.nodeType == prioritizedMiniGame) {
                                 selectedMiniGame = availableMiniGame;
-                                console.log(selectedMiniGame, "selected")
                                 break;
-                            } else {
-                                console.log("game " + availableMiniGame.nodeType + " is not prioritized " + prioritizedMiniGame);
                             }
                         }
                         if(selectedMiniGame != null) break;
                     }
                     App.Utility.log("Selected mini game: ");
                     console.log(selectedMiniGame);
-                    // if(selectedMiniGame != null) 
-                    //     nextAvailableGame = selectedMiniGame.outGoing;
-                    // else
-                    //     nextAvailableGame = null;
-                    if(selectedMiniGame == App.Gathering.MYSTERY_INDEX) {
+                    if(selectedMiniGame.nodeType == App.Gathering.MYSTERY_INDEX) {
                         var mysteryResponse = await App.Gathering.MiniGame.Mystery.init();
-                        selectedMiniGame = mysteryResponse.data.miniGame.nodeType;
+                        selectedMiniGame = mysteryResponse.data.miniGame;
                     }
-                    if(selectedMiniGame == App.Gathering.CHOPPING_INDEX) {
+                    if(selectedMiniGame.nodeType == App.Gathering.CHOPPING_INDEX) {
                         await App.Gathering.MiniGame.Chopping.init();
-                    } else if(selectedMiniGame == App.Gathering.MINING_INDEX) {
+                    } else if(selectedMiniGame.nodeType == App.Gathering.MINING_INDEX) {
                         await App.Gathering.MiniGame.Mining.init();
                     } else {
                         break;
