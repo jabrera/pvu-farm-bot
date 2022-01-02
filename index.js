@@ -54,8 +54,8 @@ var App = {
             }
         },
         SUNFLOWER: {
-            MAMA: 2,
-            SAPLING: 1,
+            MAMA: "MAMA",
+            SAPLING: "SAPLING",
         }
     },
     Gathering: {
@@ -64,46 +64,92 @@ var App = {
             ENTER_GATHER: "/user/enter-gather",
             ROUTE: "/map/route",
             START_MINIGAME: "/map/start-minigame",
+            START_MYSTERY: "/map/start-mystery",
 
+            CHOPPING_MAP: "/chopping/get-map",
             CHOPPING_TREE: "/chopping/chopping-tree",
             CHOPPING_REWARD: "/chopping/collect-reward",
             CHOPPING_FINISH: "/chopping/finish-map",
-            CHOPPING_MAP: "/chopping/get-map",
+
+            MINING_MAP: "/mining/get-map",
+            MINING_START: "/mining/start",
+            MINING_SHOOT: "/mining/shoot",
+            MINING_REWARD: "/mining/reward",
+            MINING_BAG: "/mining/add-travel-bag",
+            MINING_FINISH: "/mining/finish-map",
         },
         CHOPPING_INDEX: 0,
         MINING_INDEX: 1,
         FISHING_INDEX: 2,
-        getPrioritizedMiniGames: () => [App.Gathering.CHOPPING_INDEX, App.Gathering.MINING_INDEX, App.Gathering.FISHING_INDEX],
+        MYSTERY_INDEX: 3,
+        STATUS_CODE: {
+            TRAVEL_BAG_FULL: 1100,
+        },
+        getPrioritizedMiniGames: () => [App.Gathering.MYSTERY_INDEX, App.Gathering.CHOPPING_INDEX, App.Gathering.MINING_INDEX, App.Gathering.FISHING_INDEX],
         data: {},
         init: function() {
             return new Promise(async function(resolve) {
-                await App.Gathering.enter();
-                await App.Gathering.route();
-                if(App.Gathering.data.enter.currentStamina != 0) {
+                var nextAvailableGame = null;
+                App.Utility.log("Initializing Gathering Mode");
+                while(App.Gathering.data.enter.currentStamina != 0) {
+                    await App.Gathering.enter();
+                    await App.Gathering.route();
                     var playingIndex = App.Gathering.data.route.playingRouteIndex;
                     var map = App.Gathering.data.route.config;
+
+                    var passedMiniGameIndex = App.Gathering.data.route.passedMiniGameIndex;
+                    if(passedMiniGameIndex.length != 0) {
+                        var lastPassedMiniGame = map[passedMiniGameIndex.length-1].miniGames[passedMiniGameIndex[passedMiniGameIndex.length-1]];
+                        nextAvailableGame = lastPassedMiniGame.outGoing;
+                    }
+
                     var currentStep = map[playingIndex];
                     App.Utility.log("Current step: " + playingIndex);
                     var selectedMiniGame = null;
                     for(var x in App.Gathering.getPrioritizedMiniGames()) {
                         var prioritizedMiniGame = App.Gathering.getPrioritizedMiniGames()[x];
-                        console.log(prioritizedMiniGame);
+                        console.log("checking prioritized mini game", prioritizedMiniGame);
                         for(var y in currentStep.miniGames) {
+                            if(nextAvailableGame != null) {
+                                console.log(nextAvailableGame);
+                                console.log(y);
+                                console.log(!nextAvailableGame.includes(parseInt(y)))
+                                if(!nextAvailableGame.includes(parseInt(y))) {
+                                    console.log(y, "can't play");
+                                    continue;
+                                }
+                                console.log(y, "can play")
+                            }
                             var availableMiniGame = currentStep.miniGames[y];
-                            console.log(availableMiniGame);
                             if(availableMiniGame.nodeType == prioritizedMiniGame) {
-                                console.log("selected");
-                                selectedMiniGame = prioritizedMiniGame;
+                                selectedMiniGame = availableMiniGame;
+                                console.log(selectedMiniGame, "selected")
                                 break;
+                            } else {
+                                console.log("game " + availableMiniGame.nodeType + " is not prioritized " + prioritizedMiniGame);
                             }
                         }
                         if(selectedMiniGame != null) break;
                     }
-                    App.Utility.log("Selected mini game: " + selectedMiniGame);
+                    App.Utility.log("Selected mini game: ");
+                    console.log(selectedMiniGame);
+                    // if(selectedMiniGame != null) 
+                    //     nextAvailableGame = selectedMiniGame.outGoing;
+                    // else
+                    //     nextAvailableGame = null;
+                    if(selectedMiniGame == App.Gathering.MYSTERY_INDEX) {
+                        var mysteryResponse = await App.Gathering.MiniGame.Mystery.init();
+                        selectedMiniGame = mysteryResponse.data.miniGame.nodeType;
+                    }
                     if(selectedMiniGame == App.Gathering.CHOPPING_INDEX) {
                         await App.Gathering.MiniGame.Chopping.init();
+                    } else if(selectedMiniGame == App.Gathering.MINING_INDEX) {
+                        await App.Gathering.MiniGame.Mining.init();
+                    } else {
+                        break;
                     }
                 }
+                App.Utility.log("Finished Gathering Mode");
                 resolve();
             });
         },
@@ -135,13 +181,14 @@ var App = {
                 SMALL_STUMP: "SMALL_STUMP",
                 init: function() {
                     return new Promise(async function(resolve) {
+                        App.Utility.log("\tStarting Chopping MiniGame");
                         var start = await App.Gathering.start(App.Gathering.CHOPPING_INDEX);
                         var map = await App.Gathering.MiniGame.Chopping.getMap(start.playingMiniGameId);
                         var trees = map.objects;
                         for(var treeIndex in trees) {
                             var tree = trees[treeIndex];
                             while(App.Gathering.data.enter.currentStamina != 0) {
-                                App.Utility.log("Chopping tree #" + treeIndex + "...");
+                                App.Utility.log("\t\tChopping tree #" + treeIndex + "...");
                                 var choppedTree = await App.Gathering.MiniGame.Chopping.chop(treeIndex);
                                 App.Gathering.data.enter.currentStamina--;
                                 if(choppedTree.hasOwnProperty("rewards")) {      
@@ -149,20 +196,22 @@ var App = {
                                         for(var rewardIndex in choppedTree.rewards) {
                                             await App.Utility.timeout(500);
                                             var reward = choppedTree.rewards[rewardIndex];
-                                            App.Utility.log("Claiming reward " + reward.token);
+                                            App.Utility.log("\t\t\tClaiming reward " + reward.token);
                                             await App.Gathering.MiniGame.Chopping.reward(reward.token);
                                         }
                                     }
                                     await App.Utility.timeout(100);
                                     if(choppedTree.tree.type == App.Gathering.MiniGame.SMALL_STUMP && choppedTree.tree.isExploited) {
-                                        App.Utility.log("Tree #" + treeIndex + " chopped.");
+                                        App.Utility.log("\t\t\tTree #" + treeIndex + " chopped.");
                                         break;
                                     }
                                 } else {
                                     break;
                                 }
                             }
+                            await App.Utility.timeout(2000);
                         }
+                        App.Utility.log("\tFinished Chopping MiniGame");
                         if(App.Gathering.data.enter.currentStamina != 0) {
                             await App.Gathering.MiniGame.Chopping.finish();
                             resolve(true);
@@ -201,8 +250,147 @@ var App = {
                 }
             },
             Mining: {
+                ItemType: {
+                    COMMON_ROCK: 11,
+                    RARE_ROCK: 12,
+                },
+                generateObjectId: function(gemId) {
+                    // ez pattern pvu devs
+                    var objectId = "";
+                    var abc = "abcdefghijklmnopqrstuvwxyz".split("");
+                    var part = 0;
+                    gemId.split("").forEach(function(char, index) {
+                        if(char != "-") {
+                            var shiftCount = gemId.split("-")[part].split("").length;
+                            if(char.toUpperCase() != char.toLowerCase()) {
+                                char = abc[(abc.indexOf(char) + shiftCount) % abc.length]
+                            } else {
+                                char = (parseInt(char) + shiftCount) % 10;
+                            }
+                        } else {
+                            part++;
+                        }
+                        objectId += char;
+                    });
+                    return objectId;
+                },
+                init: function() {
+                    return new Promise(async function(resolve) {
+                        App.Utility.log("\tStarting Mining MiniGame");
+                        var start = await App.Gathering.start(App.Gathering.MINING_INDEX);
+                        var map = await App.Gathering.MiniGame.Chopping.getMap(start.playingMiniGameId);
+                        var gems = map.objects;
+                        var gemsMined = 0;
+                        var timer = await App.Gathering.MiniGame.Mining.start();
+                        App.Utility.log("\t\tTimer started.")
+                        var isStart = true;
+                        var check = setInterval(function() {
+                            var secondsRemaining = timer.validUntil/1000 - Date.now()/1000;
+                            App.Utility.log("\t\tTime remaining: " + secondsRemaining);
+                            if(secondsRemaining <= 2) {
+                                isStart = false;
+                                clearInterval(check);
+                            }
+                        }, 1000);
+                        while(isStart) {
+                            var selectedGem = gems[0];
+                            for(var gemIndex in gems) {
+                                // get lowest Y
+                                if(gem.isExploted)
+                                    continue;
+                                var gem = gems[gemIndex];
+                                if(gem.y <= selectedGem.y)
+                                    selectedGem = gem;
+                            }
+                            App.Utility.log("\t\t\tMining gem " + selectedGem.id + "...");
+                            var objectId = App.Gathering.MiniGame.Mining.generateObjectId(selectedGem.id);
+                            var shootResponse = await App.Gathering.MiniGame.Mining.shoot(objectId);
+                            App.Utility.log("\t\t\t\tGem " + selectedGem.id + " shot. Getting rewards...");
+                            var rewardResponse = await App.Gathering.MiniGame.Mining.reward(map.mapId,objectId,shootResponse.token);
+                            for(var rewardIndex in rewardResponse.rewards) {
+                                var reward = rewardResponse.rewards[rewardIndex];
+                                App.Utility.log("\t\t\t\tGetting gem " + selectedGem.id + " reward " + reward.name + " (" + reward.guid + ")");
+                                var addBag = await App.Gathering.MiniGame.Mining.add_travel_bag(reward);
+                            }
+                        }
+                        App.Utility.log("\tFinished Mining MiniGame");
+                        if(App.Gathering.data.enter.currentStamina != 0) {
+                            await App.Gathering.MiniGame.Mining.finish();
+                            resolve(true);
+                        } else {
+                            resolve(false);
+                        }
+                    });
+                },
+                start: function() {
+                    return new Promise(async function(resolve) {
+                        const response = await App.Request.get(App.Gathering.ROOT_URL + App.Gathering.API.MINING_START);
+                        resolve(response.data);
+                    });
+                },
+                getMap: function(miniGameId) {
+                    return new Promise(async function(resolve) {
+                        const response = await App.Request.get(App.Gathering.ROOT_URL + App.Gathering.API.MINING_MAP + "?miniGameId=" + miniGameId);
+                        resolve(response.data);
+                    });
+                },
+                shoot: function(objectId) {
+                    return new Promise(async function(resolve) {
+                        const response = await App.Request.get(App.Gathering.ROOT_URL + App.Gathering.API.MINING_SHOOT + "?objectId=" + objectId);
+                        resolve(response.data);
+                    });
+                },
+                reward: function(mapId, objectId, token) {
+                    return new Promise(async function(resolve) {
+                        const response = await App.Request.get(App.Gathering.ROOT_URL + App.Gathering.API.MINING_REWARD + "?mapId=" + mapId + "&objectId=" + objectId + "&token=" + token);
+                        resolve(response.data);
+                    });
+                },
+                add_travel_bag: function(item) {
+                    return new Promise(async function(resolve) {
+                        const response = await App.Request.post(App.Gathering.ROOT_URL + App.Gathering.API.MINING_BAG, {
+                            items: [{
+                                "ID": 0,
+                                "amount": item.amount,
+                                "count": 1,
+                                "guid": item.guid,
+                                "name": item.name,
+                                "type": App.Gathering.MiniGame.MiniGame.ItemType[item.name]
+                            }]
+                        });
+                        resolve(response.data);
+                    });
+                },
+                finish: function() {
+                    return new Promise(async function(resolve) {
+                        const response = await App.Request.post(App.Gathering.ROOT_URL + App.Gathering.API.MINING_FINISH);
+                        resolve();
+                    });
+                },
             }, 
             Fishing: {
+                init: function() {
+                    return new Promise(async function(resolve) {
+                        // i dont want this game
+                        resolve(true);
+                    });
+                },
+            },
+            Mystery: {
+                init: function() {
+                    return new Promise(async function(resolve) {
+                        var start = await App.Gathering.MiniGame.Mystery.start();
+                        resolve(start);
+                    });
+                },
+                start: function() {
+                    return new Promise(async function(resolve) {
+                        const response = await App.Request.post(App.Gathering.ROOT_URL + App.Gathering.API.START_MYSTERY, {
+                            "miniGameIndex": App.Gathering.CHOPPING_INDEX
+                        });
+                        resolve(response.data);
+                    });
+                },
             }
         }
     },
@@ -443,21 +631,21 @@ var App = {
                             }
                         }
                         if(selectedPlant == null) {
-                            App.Utility.log(`\t\tNo extra plants. Skipping...`);
-                            skipPlantLots = true;
-//                             plants = await App.Farm.Plant.getMySunflowers();
-//                             for(var plant in plants.data) {
-//                                 plant = plants.data[plant];
-//                                 if(plant.sunflowerId == App.Constant.SUNFLOWER.SAPLING) {
-//                                     if(plant.usages == 0) {
-//                                         App.Utility.log(`\t\tInsufficient sunflower salpings. Buying...`);
-//                                         if(await App.Shop.buy_sunflowers(App.Constant.SUNFLOWER.SAPLING,1) == false) continue;
-//                                     }
-//                                     App.Utility.log(`\t\tPlanting sunflower sapling.`);
-//                                     await App.Farm.Plant.add(selectedFarm, "0", App.Constant.SUNFLOWER.SAPLING);
-//                                     App.Utility.log(`\t\tSunflower sapling planted!`);
-//                                 }
-//                             }
+                            // App.Utility.log(`\t\tNo extra plants. Skipping...`);
+                            // skipPlantLots = true;
+                            plants = await App.Farm.Plant.getMySunflowers();
+                            for(var plant in plants.data) {
+                                plant = plants.data[plant];
+                                if(plant.type == App.Constant.SUNFLOWER.SAPLING) {
+                                    if(plant.usages == 0) {
+                                        skipPlantLots =  true;
+                                        break;
+                                    }
+                                    App.Utility.log(`\t\tPlanting sunflower sapling.`);
+                                    await App.Farm.Plant.add(selectedFarm, "0", plant.sunflowerId);
+                                    App.Utility.log(`\t\tSunflower sapling planted!`);
+                                }
+                            }
                         } else {
                             App.Utility.log(`\t\tPlanted ${selectedPlant.plantId} (${selectedPlant.plantElement})!`);
                             await App.Farm.Plant.add(selectedFarm, "0", selectedPlant);
@@ -480,21 +668,21 @@ var App = {
                             }
                         }
                         if(selectedPlant == null) {
-                            App.Utility.log(`\t\tNo extra plants. Skipping...`);
-                            skipMotherTreeLots = true;
-//                             plants = await App.Farm.Plant.getMySunflowers();
-//                             for(var plant in plants.data) {
-//                                 plant = plants.data[plant];
-//                                 if(plant.sunflowerId == App.Constant.SUNFLOWER.MAMA) {
-//                                     if(plant.usages == 0) {
-//                                         App.Utility.log(`\t\tInsufficient sunflower mama. Buying...`);
-//                                         if(await App.Shop.buy_sunflowers(App.Constant.SUNFLOWER.MAMA,1) == false) continue;
-//                                     }
-//                                     App.Utility.log(`\t\tPlanting sunflower mama.`);
-//                                     await App.Farm.Plant.add(selectedFarm, "0", App.Constant.SUNFLOWER.MAMA);
-//                                     App.Utility.log(`\t\tSunflower mama planted!`);
-//                                 }
-//                             }
+                            // App.Utility.log(`\t\tNo extra plants. Skipping...`);
+                            // skipMotherTreeLots = true;
+                            plants = await App.Farm.Plant.getMySunflowers();
+                            for(var plant in plants.data) {
+                                plant = plants.data[plant];
+                                if(plant.type == App.Constant.SUNFLOWER.MAMA) {
+                                    if(plant.usages == 0) {
+                                        skipMotherTreeLots = true;
+                                        break;
+                                    }
+                                    App.Utility.log(`\t\tPlanting sunflower mama.`);
+                                    await App.Farm.Plant.add(selectedFarm, "0", plant.sunflowerId);
+                                    App.Utility.log(`\t\tSunflower mama planted!`);
+                                }
+                            }
                         } else {
                             App.Utility.log(`\t\tPlanted ${selectedPlant.plantId} (${selectedPlant.plantElement})!`);
                             await App.Farm.Plant.add(selectedFarm, "0", selectedPlant);
