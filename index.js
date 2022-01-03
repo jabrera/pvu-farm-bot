@@ -134,7 +134,7 @@ var App = {
                     console.log(selectedMiniGame);
                     if(selectedMiniGame.nodeType == App.Gathering.MYSTERY_INDEX) {
                         var mysteryResponse = await App.Gathering.MiniGame.Mystery.init();
-                        if(!mysteryResponse.data.hasOwnProperty("miniGame") {
+                        if(!mysteryResponse.data.hasOwnProperty("miniGame")) {
                             App.Utility.log("Mystery has no mini game assigned");
                             break;
                         }
