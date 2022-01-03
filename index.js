@@ -63,6 +63,7 @@ var App = {
         API: {
             ENTER_GATHER: "/user/enter-gather",
             ROUTE: "/map/route",
+            SKIP_ROUTE: "/map/force-skip-current-route",
             START_MINIGAME: "/map/start-minigame",
             START_MYSTERY: "/map/start-mystery",
 
@@ -96,6 +97,10 @@ var App = {
                     await App.Gathering.route();
                     var playingIndex = App.Gathering.data.route.playingRouteIndex;
                     var map = App.Gathering.data.route.config;
+                    
+                    if(App.Gathering.data.route.playingMiniGameIndex != -1) {
+                        await App.Gathering.skip_route();
+                    }
 
                     var passedMiniGameIndex = App.Gathering.data.route.passedMiniGameIndex;
                     if(passedMiniGameIndex.length != 0) {
@@ -129,6 +134,10 @@ var App = {
                     console.log(selectedMiniGame);
                     if(selectedMiniGame.nodeType == App.Gathering.MYSTERY_INDEX) {
                         var mysteryResponse = await App.Gathering.MiniGame.Mystery.init();
+                        if(!mysteryResponse.data.hasOwnProperty("miniGame") {
+                            App.Utility.log("Mystery has no mini game assigned");
+                            break;
+                        }
                         selectedMiniGame = mysteryResponse.data.miniGame;
                     }
                     if(selectedMiniGame.nodeType == App.Gathering.CHOPPING_INDEX) {
@@ -157,6 +166,13 @@ var App = {
             return new Promise(async function(resolve) {
                 const response = await App.Request.get(App.Gathering.ROOT_URL + App.Gathering.API.ROUTE);
                 App.Gathering.data["route"] = response.data;
+                resolve();
+            });
+        },
+        skip_route: function() {
+            return new Promise(async function(resolve) {
+                const response = await App.Request.post(App.Gathering.ROOT_URL + App.Gathering.API.SKIP_ROUTE);
+                App.Gathering.data["route"] = response.data.route;
                 resolve();
             });
         },
