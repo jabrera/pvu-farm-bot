@@ -604,6 +604,11 @@ var App = {
                 }
                 if(plant_available == 0) skipPlantLots = true;
                 if(motherTree_available == 0) skipMotherTreeLots = true;
+                
+                var seasonEndDate = new Date(App.Weather.data.seasonEndTime);
+                var today = new Date();
+                var diffHours = Math.floor(Math.abs(today-seasonEndDate) / 1000 / 60 / 60);
+                
                 if(free_slots.data.farm.length != 0) {
                     App.Utility.log(`\tHas ${free_slots.data.farm.length} free slots!`);
                     var selectedFarm = free_slots.data.farm[0];
@@ -612,9 +617,6 @@ var App = {
                         var selectedPlant = null;
                         for(var plant in plants.data) {
                             plant = plants.data[plant];
-                            var seasonEndDate = new Date(App.Weather.data.seasonEndTime);
-                            var today = new Date();
-                            var diffHours = Math.floor(Math.abs(today-seasonEndDate) / 1000 / 60 / 60);
                             if(App.Weather.data.allowedPlants.includes(plant.plant.stats.type) && plant.plant.farmConfig.hours < diffHours) {
                                 if(selectedPlant == null) {
                                     selectedPlant = plant;
@@ -627,18 +629,21 @@ var App = {
                             // App.Utility.log(`\t\tNo extra plants. Skipping...`);
                             // skipPlantLots = true;
                             plants = await App.Farm.Plant.getMySunflowers();
+                            var found = false;
                             for(var plant in plants.data) {
                                 plant = plants.data[plant];
                                 if(plant.type == App.Constant.SUNFLOWER.SAPLING) {
-                                    if(plant.usages == 0) {
-                                        skipPlantLots =  true;
+                                    if(App.Weather.data.allowedPlants.includes(plant.seasonType) && plant.rate.hours < diffHours && plant.usages != 0) {
+                                        found = true;
+                                        App.Utility.log(`\t\tPlanting sunflower sapling.`);
+                                        await App.Farm.Plant.add(selectedFarm, "0", plant.sunflowerId);
+                                        App.Utility.log(`\t\tSunflower sapling planted!`);
+                                    } else {
                                         break;
                                     }
-                                    App.Utility.log(`\t\tPlanting sunflower sapling.`);
-                                    await App.Farm.Plant.add(selectedFarm, "0", plant.sunflowerId);
-                                    App.Utility.log(`\t\tSunflower sapling planted!`);
                                 }
                             }
+                            if(!found) skipPlantLots =  true;
                         } else {
                             App.Utility.log(`\t\tPlanted ${selectedPlant.plantId} (${selectedPlant.plantElement})!`);
                             await App.Farm.Plant.add(selectedFarm, "0", selectedPlant);
@@ -649,9 +654,6 @@ var App = {
                         var selectedPlant = null;
                         for(var plant in plants.data) {
                             plant = plants.data[plant];
-                            var seasonEndDate = new Date(App.Weather.data.seasonEndTime);
-                            var today = new Date();
-                            var diffHours = Math.floor(Math.abs(today-seasonEndDate) / 1000 / 60 / 60);
                             if(App.Weather.data.allowedPlants.includes(plant.plant.stats.type) && plant.plant.farmConfig.hours < diffHours) {
                                 if(selectedPlant == null) {
                                     selectedPlant = plant;
@@ -664,18 +666,20 @@ var App = {
                             // App.Utility.log(`\t\tNo extra plants. Skipping...`);
                             // skipMotherTreeLots = true;
                             plants = await App.Farm.Plant.getMySunflowers();
+                            var found = false;
                             for(var plant in plants.data) {
                                 plant = plants.data[plant];
                                 if(plant.type == App.Constant.SUNFLOWER.MAMA) {
-                                    if(plant.usages == 0) {
-                                        skipMotherTreeLots = true;
+                                    if(App.Weather.data.allowedPlants.includes(plant.seasonType) && plant.rate.hours < diffHours && plant.usages != 0) {
+                                        App.Utility.log(`\t\tPlanting sunflower mama.`);
+                                        await App.Farm.Plant.add(selectedFarm, "0", plant.sunflowerId);
+                                        App.Utility.log(`\t\tSunflower mama planted!`);
+                                    } else {
                                         break;
                                     }
-                                    App.Utility.log(`\t\tPlanting sunflower mama.`);
-                                    await App.Farm.Plant.add(selectedFarm, "0", plant.sunflowerId);
-                                    App.Utility.log(`\t\tSunflower mama planted!`);
                                 }
                             }
+                            if(!found) skipMotherTreeLots =  true;
                         } else {
                             App.Utility.log(`\t\tPlanted ${selectedPlant.plantId} (${selectedPlant.plantElement})!`);
                             await App.Farm.Plant.add(selectedFarm, "0", selectedPlant);
