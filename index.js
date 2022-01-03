@@ -115,9 +115,6 @@ var App = {
                         var prioritizedMiniGame = App.Gathering.getPrioritizedMiniGames()[x];
                         for(var y in currentStep.miniGames) {
                             if(nextAvailableGame != null) {
-                                console.log(nextAvailableGame);
-                                console.log(y);
-                                console.log(!nextAvailableGame.includes(parseInt(y)))
                                 if(!nextAvailableGame.includes(parseInt(y))) {
                                     continue;
                                 }
@@ -868,3 +865,4 @@ var App = {
     }
 }
 await App.init();
+await App.Gathering.init();
