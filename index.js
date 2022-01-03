@@ -176,6 +176,7 @@ var App = {
                     return new Promise(async function(resolve) {
                         App.Utility.log("\tStarting Chopping MiniGame");
                         var start = await App.Gathering.start(App.Gathering.CHOPPING_INDEX);
+                        await App.Utility.timeout(1000);
                         var map = await App.Gathering.MiniGame.Chopping.getMap(start.playingMiniGameId);
                         var trees = map.objects;
                         for(var treeIndex in trees) {
@@ -271,7 +272,8 @@ var App = {
                     return new Promise(async function(resolve) {
                         App.Utility.log("\tStarting Mining MiniGame");
                         var start = await App.Gathering.start(App.Gathering.MINING_INDEX);
-                        var map = await App.Gathering.MiniGame.Chopping.getMap(start.playingMiniGameId);
+                        await App.Utility.timeout(1000);
+                        var map = await App.Gathering.MiniGame.Mining.getMap(start.playingMiniGameId);
                         var gems = map.objects;
                         var gemsMined = 0;
                         var timer = await App.Gathering.MiniGame.Mining.start();
