@@ -715,36 +715,6 @@ var App = {
             for (var plantIndex in plants.data) {
                 var plant = plants.data[plantIndex];
                 App.Utility.log(`\tFor Plant ${plant.plantId} ${(plant.plant.hasOwnProperty("stats") ? '('+plant.plant.stats.type+')' : '(sunflower)')}`);
-                if(plant.hasCrow) {
-                    App.Utility.log(`\t\tHas crow...`);
-                    if(App.Tools.SCARECROW == 0) {
-                        App.Utility.log(`\t\t\tNo scarecrow tool. Buying...`);
-                        if(await App.Shop.buy_tools(App.Constant.TOOL.SCARECROW,1) == false) continue;
-                    }
-                    App.Utility.log(`\t\t\tApplying scarecrow to plant...`);
-                    await App.Request.post(App.Constant.ROOT_URL + App.Constant.API.APPLY_TOOL, {
-                        farmId: plant._id,
-                        toolId: App.Constant.TOOL.SCARECROW
-                    });
-                    App.Tools.SCARECROW -= 1;
-                    App.Utility.log(`\t\t\tCrow gone.`);
-                    await App.Utility.timeout();
-                }
-                if(plant.needWater) {
-                    App.Utility.log(`\t\tNeeds water...`);
-                    if(App.Tools.WATER < 2) {
-                        App.Utility.log(`\t\t\tNo water tool. Buying...`);
-                        if(await App.Shop.buy_tools(App.Constant.TOOL.WATER,1) == false) continue;
-                    }
-                    App.Utility.log(`\t\t\tWatering plant...`);
-                    await App.Request.post(App.Constant.ROOT_URL + App.Constant.API.APPLY_TOOL, {
-                        farmId: plant._id,
-                        toolId: App.Constant.TOOL.WATER
-                    });
-                    App.Tools.WATER -= 2;
-                    App.Utility.log(`\t\t\tPlant watered.`);
-                    await App.Utility.timeout();
-                }
                 if(plant.stage == "new") {
                     App.Utility.log(`\t\tPot needed...`);
                     if(App.Tools["POT"] == 0) {
@@ -782,6 +752,36 @@ var App = {
                             }
                         }
                     }   
+                }
+                if(plant.hasCrow) {
+                    App.Utility.log(`\t\tHas crow...`);
+                    if(App.Tools.SCARECROW == 0) {
+                        App.Utility.log(`\t\t\tNo scarecrow tool. Buying...`);
+                        if(await App.Shop.buy_tools(App.Constant.TOOL.SCARECROW,1) == false) continue;
+                    }
+                    App.Utility.log(`\t\t\tApplying scarecrow to plant...`);
+                    await App.Request.post(App.Constant.ROOT_URL + App.Constant.API.APPLY_TOOL, {
+                        farmId: plant._id,
+                        toolId: App.Constant.TOOL.SCARECROW
+                    });
+                    App.Tools.SCARECROW -= 1;
+                    App.Utility.log(`\t\t\tCrow gone.`);
+                    await App.Utility.timeout();
+                }
+                if(plant.needWater) {
+                    App.Utility.log(`\t\tNeeds water...`);
+                    if(App.Tools.WATER < 2) {
+                        App.Utility.log(`\t\t\tNo water tool. Buying...`);
+                        if(await App.Shop.buy_tools(App.Constant.TOOL.WATER,1) == false) continue;
+                    }
+                    App.Utility.log(`\t\t\tWatering plant...`);
+                    await App.Request.post(App.Constant.ROOT_URL + App.Constant.API.APPLY_TOOL, {
+                        farmId: plant._id,
+                        toolId: App.Constant.TOOL.WATER
+                    });
+                    App.Tools.WATER -= 2;
+                    App.Utility.log(`\t\t\tPlant watered.`);
+                    await App.Utility.timeout();
                 }
             }
             App.Utility.log(`Maintening farm - END`);
