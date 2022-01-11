@@ -712,8 +712,8 @@ var App = {
             App.Utility.log(`Plant plants - END`);
             App.Utility.log(`Maintening farm - START`);
             var plants = await App.Farm.Plant.getFarming();
-            for (var plant in plants.data) {
-                plant = plants.data[plant];
+            for (var plantIndex in plants.data) {
+                var plant = plants.data[plantIndex];
                 App.Utility.log(`\tFor Plant ${plant.plantId} ${(plant.hasOwnProperty("plantElement") ? '('+plant.plantElement+')' : '(sunflower)')}`);
                 if(plant.hasCrow) {
                     App.Utility.log(`\t\tHas crow...`);
@@ -745,27 +745,43 @@ var App = {
                     App.Utility.log(`\t\t\tPlant watered.`);
                     await App.Utility.timeout();
                 }
-                for(var tool in plant.activeTools) {
-                    tool = plant.activeTools[tool];
-                    if(tool.id == parseInt(App.Constant.TOOL.POT)) {
-                        var currentPot = tool.count;
-                        while(currentPot < 2) {
-                            App.Utility.log(`\t\tPot needed...`);
-                            if(App.Tools[tool.type] == 0) {
-                                App.Utility.log(`\t\t\tNo pot tool. Buying...`);
-                                if(await App.Shop.buy_tools(App.Constant.TOOL.POT,1) == false) break;
-                            }
-                            App.Utility.log(`\t\t\tAdding pot to plant...`);
-                            await App.Request.post(App.Constant.ROOT_URL + App.Constant.API.APPLY_TOOL, {
-                                farmId: plant._id,
-                                toolId: App.Constant.TOOL.POT
-                            });
-                            App.Tools[tool.type] -= 1;
-                            App.Utility.log(`\t\t\tPot added.`);
-                            currentPot++;
-                            await App.Utility.timeout();
-                        }
+                if(plant.stage == "new") {
+                    App.Utility.log(`\t\tPot needed...`);
+                    if(App.Tools[tool.type] == 0) {
+                        App.Utility.log(`\t\t\tNo pot tool. Buying...`);
+                        if(await App.Shop.buy_tools(App.Constant.TOOL.POT,1) == false) break;
                     }
+                    App.Utility.log(`\t\t\tAdding pot to plant...`);
+                    await App.Request.post(App.Constant.ROOT_URL + App.Constant.API.APPLY_TOOL, {
+                        farmId: plant._id,
+                        toolId: App.Constant.TOOL.POT
+                    });
+                    plants = await App.Farm.Plant.getFarming();
+                    plant = plants.data[plantIndex];
+                }
+                if(plant.stage == "farming") { 
+                    for(var tool in plant.activeTools) {
+                        tool = plant.activeTools[tool];
+                        if(tool.id == parseInt(App.Constant.TOOL.POT)) {
+                            var currentPot = tool.count;
+                            while(currentPot < 2) {
+                                App.Utility.log(`\t\tPot needed...`);
+                                if(App.Tools[tool.type] == 0) {
+                                    App.Utility.log(`\t\t\tNo pot tool. Buying...`);
+                                    if(await App.Shop.buy_tools(App.Constant.TOOL.POT,1) == false) break;
+                                }
+                                App.Utility.log(`\t\t\tAdding pot to plant...`);
+                                await App.Request.post(App.Constant.ROOT_URL + App.Constant.API.APPLY_TOOL, {
+                                    farmId: plant._id,
+                                    toolId: App.Constant.TOOL.POT
+                                });
+                                App.Tools[tool.type] -= 1;
+                                App.Utility.log(`\t\t\tPot added.`);
+                                currentPot++;
+                                await App.Utility.timeout();
+                            }
+                        }
+                    }   
                 }
             }
             App.Utility.log(`Maintening farm - END`);
