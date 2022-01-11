@@ -589,7 +589,7 @@ var App = {
             App.Utility.log(`Harvest plants - START`);
             for (var plant in plants.data) {
                 plant = plants.data[plant];
-                App.Utility.log(`\tFor Plant ${plant.plantId} ${(plant.hasOwnProperty("plantElement") ? '('+plant.plantElement+')' : '(sunflower)')}`);
+                App.Utility.log(`\tFor Plant ${plant.plantId} ${(plant.plant.hasOwnProperty("stats") ? '('+plant.plant.stats.type+')' : '(sunflower)')}`);
                 if(plant.stage == App.Constant.FARMING_STAGE.CANCELLED) {
                     if(plant.totalHarvest > 0) {
                         App.Utility.log(`\tHarvesting...`);
@@ -664,7 +664,7 @@ var App = {
                             }
                             if(!found) skipPlantLots =  true;
                         } else {
-                            App.Utility.log(`\t\tPlanted ${selectedPlant.plantId} (${selectedPlant.plantElement})!`);
+                            App.Utility.log(`\t\tPlanted ${selectedPlant.plantId} (${selectedPlant.plant.stats.type})!`);
                             await App.Farm.Plant.add("0", selectedPlant);
                         }
                         plant_available--;
@@ -700,7 +700,7 @@ var App = {
                             }
                             if(!found) skipMotherTreeLots =  true;
                         } else {
-                            App.Utility.log(`\t\tPlanted ${selectedPlant.plantId} (${selectedPlant.plantElement})!`);
+                            App.Utility.log(`\t\tPlanted ${selectedPlant.plantId} (${selectedPlant.plant.stats.type})!`);
                             await App.Farm.Plant.add("0", selectedPlant);
                         }
                         motherTree_available--;
@@ -714,7 +714,7 @@ var App = {
             var plants = await App.Farm.Plant.getFarming();
             for (var plantIndex in plants.data) {
                 var plant = plants.data[plantIndex];
-                App.Utility.log(`\tFor Plant ${plant.plantId} ${(plant.hasOwnProperty("plantElement") ? '('+plant.plantElement+')' : '(sunflower)')}`);
+                App.Utility.log(`\tFor Plant ${plant.plantId} ${(plant.plant.hasOwnProperty("stats") ? '('+plant.plant.stats.type+')' : '(sunflower)')}`);
                 if(plant.hasCrow) {
                     App.Utility.log(`\t\tHas crow...`);
                     if(App.Tools.SCARECROW == 0) {
