@@ -747,7 +747,7 @@ var App = {
                 }
                 if(plant.stage == "new") {
                     App.Utility.log(`\t\tPot needed...`);
-                    if(App.Tools[tool.type] == 0) {
+                    if(App.Tools["POT"] == 0) {
                         App.Utility.log(`\t\t\tNo pot tool. Buying...`);
                         if(await App.Shop.buy_tools(App.Constant.TOOL.POT,1) == false) break;
                     }
