@@ -481,6 +481,7 @@ var App = {
     },
     Balance: {
         le: 0,
+        le_start: 0,
         sapling: 0,
         pvu: 0,
         bnb: 0,
@@ -876,9 +877,11 @@ var App = {
         App.Utility.log("Initializing bot...");
         await App.Tools.init();
         await App.Balance.get();
+        App.Balance.le_start = App.Balance.le;
         await App.Weather.get();
         await App.Farm.init();
         var duration = (new Date() - startDate) / 1000;
+        App.Utility.log("You have a net profit of " + (App.Balance.le - App.Balance.le_start) + " LE.");
         App.Utility.log("Bot finished in " + duration + " seconds.");
     }
 }
