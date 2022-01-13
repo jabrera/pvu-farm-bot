@@ -713,6 +713,21 @@ var App = {
             App.Utility.log(`Plant plants - END`);
             App.Utility.log(`Maintening farm - START`);
             var plants = await App.Farm.Plant.getFarming();
+            var neededPot = 0;
+            for (var plantIndex in plants.data) {
+                if(plant.stage == "new") {
+                    neededPot += 2;
+                }
+                if(plant.stage == "farming") { 
+                    for(var tool in plant.activeTools) {
+                        tool = plant.activeTools[tool];
+                        neededPot += (2 - tool.count);
+                    }   
+                }
+            }
+            await App.Shop.buy_tools(App.Constant.TOOL.POT,neededPot);
+            await App.Tools.init();
+            var plants = await App.Farm.Plant.getFarming();
             for (var plantIndex in plants.data) {
                 var plant = plants.data[plantIndex];
                 App.Utility.log(`\tFor Plant ${plant.plantId} ${(plant.plant.hasOwnProperty("stats") ? '('+plant.plant.stats.type+')' : '(sunflower)')}`);
