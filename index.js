@@ -593,7 +593,7 @@ var App = {
                 App.Utility.log(`\tFor Plant ${plant.plantId} ${(plant.plant.hasOwnProperty("stats") ? '('+plant.plant.stats.type+')' : '(sunflower)')}`);
                 if(plant.stage == App.Constant.FARMING_STAGE.CANCELLED) {
                     if(plant.totalHarvest > 0) {
-                        App.Utility.log(`\tHarvesting...`);
+                        App.Utility.log(`\t\tHarvesting...`);
                         var r = await App.Farm.Plant.harvest(plant);
                         App.Balance.le += r.data.amount;
                     } else {
@@ -601,7 +601,12 @@ var App = {
                     }
                     continue;
                 } else {
-                    App.Utility.log(`\t\tNothing to harvest.`);
+                    var harvestTime = new Date(plant.harvestTime);
+                    var now = new Date();
+                    var remaining = (harvestTime - now) / 1000 / 60 / 60;
+                    var hours = Math.floor(remaining);
+                    var minutes = Math.floor((remaining-hours) * 60);
+                    App.Utility.log(`\t\tHarvest in ${(hours != 0 ) ? hours + " hours and " : ""} hours and ${minutes} minutes.`);
                 }
             }
             App.Utility.log(`Harvest plants - END`);
