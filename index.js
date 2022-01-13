@@ -720,6 +720,7 @@ var App = {
             var plants = await App.Farm.Plant.getFarming();
             var neededPot = 0;
             for (var plantIndex in plants.data) {
+                var plant = plants.data[plantIndex];
                 if(plant.stage == "new") {
                     neededPot += 2;
                 }
@@ -730,8 +731,10 @@ var App = {
                     }   
                 }
             }
-            await App.Shop.buy_tools(App.Constant.TOOL.POT,neededPot);
-            await App.Tools.init();
+            if(neededPot != 0) {
+                await App.Shop.buy_tools(App.Constant.TOOL.POT,neededPot);
+                await App.Tools.init();
+            }
             var plants = await App.Farm.Plant.getFarming();
             for (var plantIndex in plants.data) {
                 var plant = plants.data[plantIndex];
