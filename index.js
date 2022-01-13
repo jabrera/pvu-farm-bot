@@ -733,7 +733,6 @@ var App = {
             }
             if(neededPot != 0) {
                 await App.Shop.buy_tools(App.Constant.TOOL.POT,neededPot);
-                await App.Tools.init();
             }
             var plants = await App.Farm.Plant.getFarming();
             for (var plantIndex in plants.data) {
