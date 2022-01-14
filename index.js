@@ -593,8 +593,8 @@ var App = {
                 App.Utility.log(`\tFor Plant ${plant.plantId} ${(plant.plant.hasOwnProperty("stats") ? '('+plant.plant.stats.type+')' : '(sunflower)')}`);
                 if(plant.stage == App.Constant.FARMING_STAGE.CANCELLED) {
                     if(plant.totalHarvest > 0) {
-                        App.Utility.log(`\t\tHarvesting...`);
                         var r = await App.Farm.Plant.harvest(plant);
+                        App.Utility.log(`\t\tHarvested ${plant.totalHarvest} LE`);
                         App.Balance.le += r.data.amount;
                     } else {
                         await App.Farm.Plant.remove(plant);
