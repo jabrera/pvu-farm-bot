@@ -880,13 +880,13 @@ var App = {
                 return new Promise(async function(resolve) {
                     await App.Utility.timeout();
                     if(!isNaN(plant)) {
-                        resolve(await App.Request.post(App.Constant.ROOT_URL + App.Constant.API.FARMS, {
+                        resolve(await App.Request.post(App.Constant.ROOT_URL + App.Constant.API.ADD_PLANT, {
                             farmId: farm._id,
                             landId: land,
                             sunflowerId: plant
                         }));
                     } else {
-                        resolve(await App.Request.post(App.Constant.ROOT_URL + App.Constant.API.FARMS, {
+                        resolve(await App.Request.post(App.Constant.ROOT_URL + App.Constant.API.ADD_PLANT, {
                             farmId: farm._id,
                             landId: land,
                             plantId: plant.plantId
