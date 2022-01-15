@@ -731,8 +731,8 @@ var App = {
                     }   
                 }
             }
-            if(App.Tools["POT"] - neededPot < 0) {
-                await App.Shop.buy_tools(App.Constant.TOOL.POT,App.Tools["POT"] - neededPot);
+            if(neededPot - App.Tools["POT"] > 0) {
+                await App.Shop.buy_tools(App.Constant.TOOL.POT,neededPot - App.Tools["POT"]);
             }
             var plants = await App.Farm.Plant.getFarming();
             for (var plantIndex in plants.data) {
