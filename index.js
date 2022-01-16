@@ -580,7 +580,6 @@ var App = {
                 App.Weather.data = weather.data;
                 var seasonEndDate = new Date(App.Weather.data.seasonEndTime);
                 App.Utility.log(`Season: ${App.Weather.data.season} ends on ${seasonEndDate}`);
-                App.
                 resolve();
             });
         }
