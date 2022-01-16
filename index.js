@@ -578,7 +578,9 @@ var App = {
                 App.Utility.log(`Getting season data...`);
                 const weather = await App.Request.get(App.Constant.ROOT_URL + App.Constant.API.WEATHER_TODAY);
                 App.Weather.data = weather.data;
-                App.Utility.log(`Season: ${App.Weather.data.season}`);
+                var seasonEndDate = new Date(App.Weather.data.seasonEndTime);
+                App.Utility.log(`Season: ${App.Weather.data.season} ends on ${seasonEndDate}`);
+                App.
                 resolve();
             });
         }
