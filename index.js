@@ -637,7 +637,9 @@ var App = {
                 
                 if(totalAvailable != 0) {
                     App.Utility.log(`\tHas ${totalAvailable} free slots!`);
-                    var selectedFarm = free_slots.data.farm[0];
+                    var selectedFarm = null;
+                    if(free_slots.data.farm.length != 0)
+                        selectedFarm = free_slots.data.farm[0];
                     if(plant_available > 0 && !skipPlantLots) {
                         var plants = await App.Farm.Plant.getMyPlants();
                         var selectedPlant = null;
@@ -880,19 +882,42 @@ var App = {
             add: function(farm, land, plant) {
                 return new Promise(async function(resolve) {
                     await App.Utility.timeout();
+                    var url = "", data = {};
                     if(!isNaN(plant)) {
-                        resolve(await App.Request.post(App.Constant.ROOT_URL + App.Constant.API.ADD_PLANT, {
-                            farmId: farm._id,
-                            landId: land,
-                            sunflowerId: plant
-                        }));
+                        if(farm == null) {
+                            url = App.Constant.ROOT_URL + App.Constant.API.FARMS;
+                            data = {
+                                landId: land,
+                                sunflowerId: plant
+                            };
+                        } else {
+                            url = App.Constant.ROOT_URL + App.Constant.API.ADD_PLANT;
+                            data = {
+                                farmId: farm._id,
+                                landId: land,
+                                sunflowerId: plant
+                            };
+                        }
                     } else {
-                        resolve(await App.Request.post(App.Constant.ROOT_URL + App.Constant.API.ADD_PLANT, {
-                            farmId: farm._id,
-                            landId: land,
-                            plantId: plant.plantId
-                        }));
+                        if(farm == null) {
+                            url = App.Constant.ROOT_URL + App.Constant.API.FARMS;
+                            data = {
+                                landId: land,
+                                plantId: plant.plantId
+                            };
+                        } else {
+                            url = App.Constant.ROOT_URL + App.Constant.API.ADD_PLANT;
+                            data = {
+                                farmId: farm._id,
+                                landId: land,
+                                plantId: plant.plantId
+                            };
+                        }
                     }
+                    if(url == "" && data == {})
+                        resolve(false);
+                    else
+                        resolve(await App.Request.post(url, data));
                 });
             }
         },
